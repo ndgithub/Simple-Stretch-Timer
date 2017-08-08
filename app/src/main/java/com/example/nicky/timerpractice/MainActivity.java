@@ -9,79 +9,67 @@ import android.support.v4.app.TaskStackBuilder;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.w3c.dom.Text;
+
+import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
 public class MainActivity extends AppCompatActivity {
 
     NotificationManager mNotificationManager;
     NotificationCompat.Builder mBuilder;
     private final int NOTIFICATION_ID = 1;
-
-    RemoteViews remoteView;
+    static ArrayList<Integer> timesArray;
+    TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final TextView textView = (TextView) findViewById(R.id.test_view1);
+        textView = (TextView) findViewById(R.id.test_view1);
 
-        remoteView = new RemoteViews(getPackageName(), R.layout.notification);
-        buildnotification();
+        timesArray = new ArrayList<>();
+        timesArray.add(3);
+        timesArray.add(5);
+        timesArray.add(7);
+        timerFunction(timesArray.get(0));
+    }
 
-        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+    public void timerFunction(final Integer sec) {
+        textView.setText(sec.toString());
+        timesArray.remove(0);
 
-
-        for (int i = 0;i < 3;i++) {
-
-
-        }
-        CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
-
+        CountDownTimer countDownTimer = new CountDownTimer(sec * 1000, 1000) {
+            @Override
             public void onTick(long millisUntilFinished) {
                 textView.setText("seconds remaining: " + millisUntilFinished / 1000);
-                remoteView.setTextViewText(R.id.remote_text,"seconds remaining: "
-                        + millisUntilFinished / 1000);
-                mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
 
             }
 
+            @Override
             public void onFinish() {
-                textView.setText("done!");
-                remoteView.setTextViewText(R.id.remote_text,"done");
-                mNotificationManager.notify(1, mBuilder.build());
+                Log.v("***",timesArray.size() + " ");
+                if (timesArray.size() > 0) {
+                    Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
+                    timerFunction(timesArray.get(0));
+                } else {
+                    Toast.makeText(getApplicationContext(), "Ding, Ding Ding!!!", Toast.LENGTH_SHORT).show();
+                }
+
             }
         };
+
         countDownTimer.start();
-
-
-// mNotificationId is a unique integer your app uses to identify the
-// notification. For example, to cancel the notification, you can pass its ID
-// number to NotificationManager.cancel().
-
-
     }
 
-    private void buildnotification() {
 
-        mBuilder =
-                new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_grade_black_18dp)
-                        .setContent(remoteView);
-// Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent =
-                stackBuilder.getPendingIntent(
-                        0,
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                );
-        mBuilder.setContentIntent(resultPendingIntent);
-        mNotificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    }
+
 }
+
+
+
