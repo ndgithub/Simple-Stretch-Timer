@@ -12,12 +12,14 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/button_play_pause"/>
+        android:id="@+id/button_play_pause"
+        android:text="play"/>
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/button_reset"/>
+        android:id="@+id/button_reset"
+        android:text="reset"/>
 
 
 </LinearLayout>
