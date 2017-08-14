@@ -122,7 +122,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFinish() {
-                textView.setText("caca");
                 timerFinished();
             }
         };
@@ -174,7 +173,6 @@ public class MainActivity extends AppCompatActivity {
         outState.putLong("time_elapsed_key", timeElapsed);
         outState.putInt("timer_position_key", timerPos);
         outState.putString("timer_display_text_key", textView.getText().toString());
-
 
     }
 }
