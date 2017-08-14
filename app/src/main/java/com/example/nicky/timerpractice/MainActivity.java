@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -29,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.v("***", "onCreate");
 
         textView = (TextView) findViewById(R.id.test_view1);
 
@@ -40,7 +43,20 @@ public class MainActivity extends AppCompatActivity {
         timesArray.add(5);
         timesArray.add(7);
 
-        reset();
+        if (savedInstanceState != null) {
+            textView.setText(savedInstanceState.getString("timer_display_text_key"));
+            timeElapsed = savedInstanceState.getLong("time_elapsed_key");
+            isRunning = savedInstanceState.getBoolean("running_key");
+            timerPos = savedInstanceState.getInt("timer_position_key");
+
+            if (!isRunning) {
+                play();
+            }
+
+        } else {
+            reset();
+        }
+
 
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     private void play() {
         playButton.setText("pause");
 
+        Log.v("***", "PLAY");
         startTimer(returnCountdownTime());
         isRunning = true;
     }
@@ -70,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     private void pause() {
         timeElapsed = (SystemClock.elapsedRealtime() - startingTime) + timeElapsed;
         playButton.setText("play");
+
+        Log.v("***", "PAUSE");
         countDownTimer.cancel();
         isRunning = false;
     }
@@ -94,7 +113,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTick(long millisUntilFinished) {
                 textView.setText("seconds remaining: " + Math.ceil(millisUntilFinished / 1000.));
-                Log.v("***", "millisUntilFinished: " + millisUntilFinished );
+                Log.v("***", "millisUntilFinished: " + millisUntilFinished);
+
             }
 
             @Override
@@ -136,6 +156,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.v("***", "onDestroy");
+
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.v("***", "onSaveInstanceState");
+        pause();
+        outState.putBoolean("running_key", isRunning);
+        outState.putLong("time_elapsed_key", timeElapsed);
+        outState.putInt("timer_position_key", timerPos);
+        outState.putString("timer_display_text_key", textView.getText().toString());
+
     }
 }
 
