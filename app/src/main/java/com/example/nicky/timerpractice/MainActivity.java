@@ -49,32 +49,35 @@ public class MainActivity extends AppCompatActivity {
             isRunning = savedInstanceState.getBoolean("running_key");
             timerPos = savedInstanceState.getInt("timer_position_key");
 
-            if (!isRunning) {
+            if (isRunning) {
                 play();
             }
-
-        } else {
-            reset();
         }
 
 
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!isRunning) {
-                    play();
-                } else {
-                    pause();
-                }
-            }
-        });
-        resetButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                reset();
-            }
-        });
+
+
+        playButton.setOnClickListener(new View.OnClickListener()
+
+    {
+        @Override
+        public void onClick (View v){
+        if (!isRunning) {
+            play();
+        } else {
+            pause();
+        }
     }
+    });
+        resetButton.setOnClickListener(new View.OnClickListener()
+
+    {
+        @Override
+        public void onClick (View v){
+        reset();
+    }
+    });
+}
 
     private void play() {
         playButton.setText("pause");
@@ -164,16 +167,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.v("***", "onSaveInstanceState");
-        pause();
         outState.putBoolean("running_key", isRunning);
+        if (isRunning) {
+            pause();
+        }
         outState.putLong("time_elapsed_key", timeElapsed);
         outState.putInt("timer_position_key", timerPos);
         outState.putString("timer_display_text_key", textView.getText().toString());
 
+
     }
 }
 
-//TODO: Handle orientation change
 
 
 
