@@ -1,5 +1,6 @@
 package com.example.nicky.timerpractice;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,14 +10,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-import java.util.ArrayList;
-
 public class MainActivity extends AppCompatActivity {
 
-private MyCountdownTimer cdt;
+    private MyCountdownTimer cdt;
     private TextView textView;
     boolean isRunning;
-    MyCountdownTimer countDownTimer;
     Button playButton;
     Button resetButton;
     private final int TICK_INTERVAL = 1000;
@@ -45,9 +43,13 @@ private MyCountdownTimer cdt;
             }
         });
 
+
     }
 
     private void play() {
+        startService(new Intent(getApplicationContext(), TimerService.class));
+
+
         isRunning = true;
         playButton.setText("PAUSE");
         Log.v("***", "PLAY");
@@ -65,7 +67,6 @@ private MyCountdownTimer cdt;
             }
         };
         cdt.start();
-
     }
 
     private void pause() {
@@ -75,8 +76,43 @@ private MyCountdownTimer cdt;
         isRunning = false;
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.v("***", "onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.v("***", "onResume");
+    }
 
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.v("***", "onPause");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.v("***", "onSaveInstanceState");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.v("***", "onStop");
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.v("***", "onDestroy");
+    }
 }
 
 
