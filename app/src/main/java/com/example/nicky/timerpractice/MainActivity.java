@@ -51,6 +51,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        tickReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY,1);
+                textView.setText(secsRemaining + " ");
+                Log.v("*** - Receiver","onRecieve");
+            }
+        };
 
     }
 
@@ -58,9 +66,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         Log.v("***", "onStart");
+        LocalBroadcastManager.getInstance(this).registerReceiver(tickReceiver, new IntentFilter(TimerService.TIMER_SERVICE_ONTICK_KEY));
 
         startService(new Intent(this, TimerService.class));
-        bindService(new Intent(this, TimerService.class), serviceConnection,BIND_ABOVE_CLIENT);
+        bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
     }
 
     @Override
@@ -73,13 +82,14 @@ public class MainActivity extends AppCompatActivity {
     public void play() {
         playButton.setText("PAUSE");
         timerService.play();
-        // TODO: Play in Service
+
     }
 
     public void pause() {
         playButton.setText("Play");
-        // TODO: Pause in Service
+        timerService.pause();
     }
+
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -115,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.v("***", "onStop");
-
+        //LocalBroadcastManager.getInstance(this).unregisterReceiver(tickReceiver);
 
         // TODO: 8/17/17 Create notification
     }
@@ -125,12 +135,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.v("***", "onDestroy");
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        Log.v("***", "onConfigurationChanged");
     }
 
 }

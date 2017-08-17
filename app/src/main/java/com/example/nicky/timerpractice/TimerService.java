@@ -37,14 +37,15 @@ public class TimerService extends Service {
     }
 
     public void play() {
-
         isRunning = true;
-
-        Log.v("***", "PLAY");
-        cdt = new MyCountdownTimer(10000, 1000) {
+        Log.v("*** - Service", "PLAY");
+        cdt = new MyCountdownTimer(5000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 Log.v("*** - Service ", "millisUntilFinished: " + millisUntilFinished);
+                Log.v("*** - Service", "Secs Rem: " + Math.ceil(millisUntilFinished / 1000.));
+                broadcastTick(millisUntilFinished);
+
             }
 
             @Override
@@ -52,14 +53,14 @@ public class TimerService extends Service {
                 Log.v("***", "onFinish");
                 pause();
                 Toast.makeText(getApplicationContext(), "finished!", Toast.LENGTH_SHORT).show();
-                stopService(new Intent(getApplicationContext(), TimerService.class));
+
             }
         };
         cdt.start();
     }
 
     public void pause() {
-        Log.v("***", "PAUSE");
+        Log.v("*** - Service", "PAUSE");
         cdt.cancel();
         isRunning = false;
     }
@@ -69,7 +70,7 @@ public class TimerService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.v("*** - Service ", "onCreate");
-
+        localBroadcaster = LocalBroadcastManager.getInstance(this);
     }
 
     @Override
@@ -78,7 +79,11 @@ public class TimerService extends Service {
         Log.v("*** - Service ", "onDestroy");
 
     }
-
+    private void broadcastTick(long milsUntilFinished) {
+        Intent tickIntent = new Intent(TIMER_SERVICE_ONTICK_KEY);
+        tickIntent.putExtra(MILS_UNTIL_FINISHED_KEY,Math.ceil(milsUntilFinished / 1000.));
+        localBroadcaster.sendBroadcast(tickIntent);
+    }
 
     public class TimerBinder extends Binder {
 
