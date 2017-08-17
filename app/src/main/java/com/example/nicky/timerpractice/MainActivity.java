@@ -20,12 +20,13 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    private MyCountdownTimer cdt;
     private TextView textView;
     boolean isRunning;
     Button playButton;
     Button resetButton;
     BroadcastReceiver tickReceiver;
+    TimerService timerService;
+    boolean isBound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,14 +51,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        tickReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                // TODO: 8/17/17 grab time from intent
-                // TODO: update ui
-            }
-        };
-
 
     }
 
@@ -65,12 +58,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         Log.v("***", "onStart");
-        LocalBroadcastManager.getInstance(this).registerReceiver(tickReceiver, new IntentFilter(TimerService.TIMER_SERVICE_ONTICK_KEY));
-startService(new Intent(this,TimerService.class));
 
-        // TODO: 8/17/17 get rid of notification
-
-
+        startService(new Intent(this, TimerService.class));
+        bindService(new Intent(this, TimerService.class), serviceConnection,BIND_ABOVE_CLIENT);
     }
 
     @Override
@@ -82,6 +72,7 @@ startService(new Intent(this,TimerService.class));
 
     public void play() {
         playButton.setText("PAUSE");
+        timerService.play();
         // TODO: Play in Service
     }
 
@@ -91,25 +82,42 @@ startService(new Intent(this,TimerService.class));
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.v("***", "onSaveInstanceState");
+    }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            TimerService.TimerBinder timerBinder = (TimerService.TimerBinder) service;
+            timerService = timerBinder.getService();
+            isBound = true;
+            Log.v("*** - MainActivity", "Service is bound");
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isBound = false;
+            Log.v("*** - MainActivity", "Service is un-bound");
+        }
+    };
+
+
+    @Override
     protected void onPause() {
         super.onPause();
         Log.v("***", "onPause");
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        Log.v("***", "onSaveInstanceState");
-    }
-
-    @Override
     protected void onStop() {
         super.onStop();
         Log.v("***", "onStop");
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(tickReceiver);
 
 
-        // TODO: 8/17/17 Create notification 
+        // TODO: 8/17/17 Create notification
     }
 
 
@@ -125,7 +133,6 @@ startService(new Intent(this,TimerService.class));
         Log.v("***", "onConfigurationChanged");
     }
 
-
 }
 
 //******Eventually stuff
@@ -133,6 +140,7 @@ startService(new Intent(this,TimerService.class));
 
 //TODO: Combine everything with other project.
 // startService() and binding together will prevent from being destroyed
+//Service should be destroyed when fully finished
 
 
 

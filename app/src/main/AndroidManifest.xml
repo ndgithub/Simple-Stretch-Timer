@@ -11,8 +11,7 @@
         android:theme="@style/AppTheme">
         <service android:name=".TimerService" />
         <activity
-            android:name=".MainActivity"
-            android:configChanges="orientation|screenSize">
+            android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
