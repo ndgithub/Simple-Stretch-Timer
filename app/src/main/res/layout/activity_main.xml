@@ -11,6 +11,13 @@
         android:text="Hello World!"
         android:textSize="30sp" />
 
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/service_connected_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Service Coneected!"
+        android:textSize="30sp" />
+
     <Button
         android:id="@+id/button_play_pause"
         android:layout_width="match_parent"

@@ -1,6 +1,14 @@
 package com.example.nicky.timerpractice;
 
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.res.Configuration;
+import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     boolean isRunning;
     Button playButton;
     Button resetButton;
-    private final int TICK_INTERVAL = 1000;
+    BroadcastReceiver tickReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
         Log.v("***", "onCreate");
 
         textView = (TextView) findViewById(R.id.test_view1);
-
         playButton = (Button) findViewById(R.id.button_play_pause);
         resetButton = (Button) findViewById(R.id.button_reset);
 
@@ -43,43 +50,27 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-    }
-
-    private void play() {
-        startService(new Intent(getApplicationContext(), TimerService.class));
-
-
-        isRunning = true;
-        playButton.setText("PAUSE");
-        Log.v("***", "PLAY");
-        cdt = new MyCountdownTimer(10000, 1000) {
+        tickReceiver = new BroadcastReceiver() {
             @Override
-            public void onTick(long millisUntilFinished) {
-                textView.setText("seconds remaining: " + Math.ceil(millisUntilFinished / 1000.));
-                Log.v("***", "millisUntilFinished: " + millisUntilFinished);
-            }
-
-            @Override
-            public void onFinish() {
-                Log.v("***", "onFinish");
-                Toast.makeText(MainActivity.this, "finished!", Toast.LENGTH_SHORT).show();
+            public void onReceive(Context context, Intent intent) {
+                // TODO: 8/17/17 grab time from intent
+                // TODO: update ui
             }
         };
-        cdt.start();
-    }
 
-    private void pause() {
-        playButton.setText("play");
-        Log.v("***", "PAUSE");
-        cdt.cancel();
-        isRunning = false;
+
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         Log.v("***", "onStart");
+        LocalBroadcastManager.getInstance(this).registerReceiver(tickReceiver, new IntentFilter(TimerService.TIMER_SERVICE_ONTICK_KEY));
+startService(new Intent(this,TimerService.class));
+
+        // TODO: 8/17/17 get rid of notification
+
+
     }
 
     @Override
@@ -88,6 +79,16 @@ public class MainActivity extends AppCompatActivity {
         Log.v("***", "onResume");
     }
 
+
+    public void play() {
+        playButton.setText("PAUSE");
+        // TODO: Play in Service
+    }
+
+    public void pause() {
+        playButton.setText("Play");
+        // TODO: Pause in Service
+    }
 
     @Override
     protected void onPause() {
@@ -105,6 +106,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.v("***", "onStop");
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(tickReceiver);
+
+
+        // TODO: 8/17/17 Create notification 
     }
 
 
@@ -113,10 +118,21 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         Log.v("***", "onDestroy");
     }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        Log.v("***", "onConfigurationChanged");
+    }
+
+
 }
 
+//******Eventually stuff
 
 
+//TODO: Combine everything with other project.
+// startService() and binding together will prevent from being destroyed
 
 
 
