@@ -18,6 +18,9 @@ import android.widget.Toast;
 public class TimerService extends Service {
     private final IBinder mBinder = new TimerBinder();
     MyCountdownTimer cdt;
+    LocalBroadcastManager localBroadcaster;
+    static final public String TIMER_SERVICE_ONTICK_KEY = "com.example.nicky.timerpractice.timerservice.TIMEUPDATE";
+    static final public String MILS_UNTIL_FINISHED_KEY = "mils til fin";
     private boolean isRunning;
 
     @Override
@@ -66,6 +69,7 @@ public class TimerService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.v("*** - Service ", "onCreate");
+
     }
 
     @Override
