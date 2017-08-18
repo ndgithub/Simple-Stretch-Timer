@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
     NotificationCompat.Builder mBuilder;
     private final int NOTIFICATION_ID = 1;
     private TextView textView;
-    boolean isRunning;
     Button playButton;
     Button resetButton;
     BroadcastReceiver tickReceiver;
