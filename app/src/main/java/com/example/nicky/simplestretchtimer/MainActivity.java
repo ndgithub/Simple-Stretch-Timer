@@ -4,10 +4,12 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -15,10 +17,15 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.nicky.simplestretchtimer.data.StretchDbContract;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -32,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     BroadcastReceiver tickReceiver;
     TimerService timerService;
     boolean isBound;
+    TextView textView2;
 
     RemoteViews remoteView;
 
@@ -44,8 +52,8 @@ public class MainActivity extends AppCompatActivity {
         textView = (TextView) findViewById(R.id.test_view1);
         playButton = (Button) findViewById(R.id.button_play_pause);
         resetButton = (Button) findViewById(R.id.button_reset);
-
         remoteView = new RemoteViews(getPackageName(), R.layout.notification);
+        textView2 = (TextView) findViewById(R.id.test_view2);
 
 
         playButton.setOnClickListener(new View.OnClickListener() {
@@ -123,7 +131,33 @@ public class MainActivity extends AppCompatActivity {
         playButton.setText("Play");
         timerService.reset();
     }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        if (id == R.id.add_entry) {
+            addTestEntry();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+
+    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -197,6 +231,43 @@ public class MainActivity extends AppCompatActivity {
         mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     }
+
+    private void populateViews() {
+        textView2.setText("");
+        String[] projection = {StretchDbContract.Stretches.NAME,StretchDbContract.Stretches.TIME};
+
+        Cursor cursor = getContentResolver().query(
+                StretchDbContract.Stretches.CONTENT_URI,   // The content URI of the words table
+                projection,             // The columns to return for each row
+                null,                   // Selection criteria
+                null,                   // Selection criteria
+                null);
+        if (cursor == null) {
+            Toast.makeText(getApplicationContext(),"Cursor is null", Toast.LENGTH_LONG).show();
+            return;
+        }
+        cursor.moveToFirst();
+        do {
+            String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
+            int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
+
+            textView2.append(name + ": " + time + "\n");
+        } while (cursor.moveToNext());
+
+
+        cursor.close();
+    }
+
+    private void addTestEntry() {
+
+        ContentValues cv = new ContentValues();
+        cv.put(StretchDbContract.Stretches.NAME,"caca");
+        cv.put(StretchDbContract.Stretches.TIME,"23");
+
+        getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI,cv);
+        populateViews();
+    }
+
 
 }
 

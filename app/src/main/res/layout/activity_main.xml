@@ -25,4 +25,9 @@
         android:text="reset" />
 
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/test_view2"/>
+
 </LinearLayout>
