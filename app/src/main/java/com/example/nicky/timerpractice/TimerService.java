@@ -4,7 +4,9 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
@@ -23,6 +25,7 @@ public class TimerService extends Service {
     static final public String MILS_UNTIL_FINISHED_KEY = "mils til fin";
     private boolean isRunning;
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Toast.makeText(this, "Service onStartCommand", Toast.LENGTH_SHORT).show();
@@ -36,7 +39,7 @@ public class TimerService extends Service {
         return mBinder;
     }
 
-    public void play() {
+    public void () {
         isRunning = true;
         Log.v("*** - Service", "PLAY");
         cdt = new MyCountdownTimer(5000, 1000) {
@@ -59,6 +62,33 @@ public class TimerService extends Service {
         cdt.start();
     }
 
+    private void startTimer(long countdownTime) {
+        final int TICK_INTERVAL = 1000;
+        long leftover = countdownTime % TICK_INTERVAL;
+        final Handler handler = new Handler();
+        startingTime = SystemClock.elapsedRealtime();
+        countDownTimer = new MyCountdownTimer(countdownTime - leftover, TICK_INTERVAL) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                textView.setText("seconds remaining: " + Math.ceil(millisUntilFinished / 1000.));
+                Log.v("***", "millisUntilFinished: " + millisUntilFinished);
+
+            }
+
+            @Override
+            public void onFinish() {
+                timerFinished();
+            }
+        };
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                countDownTimer.start();
+            }
+        }, leftover);
+
+    }
+
     public void pause() {
         Log.v("*** - Service", "PAUSE");
         cdt.cancel();
@@ -66,6 +96,39 @@ public class TimerService extends Service {
     }
 
 
+    private void play() {
+        playButton.setText("pause");
+
+        Log.v("***", "PLAY");
+        startTimer(returnCountdownTime());
+        isRunning = true;
+    }
+
+    private void pause() {
+        timeElapsed = (SystemClock.elapsedRealtime() - startingTime) + timeElapsed;
+        playButton.setText("play");
+
+        Log.v("***", "PAUSE");
+        countDownTimer.cancel();
+        isRunning = false;
+    }
+
+
+    private void reset() {
+        timerPos = 0;
+        timeElapsed = 0;
+        textView.setText(timesArray.get(0) + " ");
+        //TODO:Should reset also pause, (Google timer does)
+        if (isRunning) {
+            countDownTimer.cancel();
+            startTimer(returnCountdownTime());
+        }
+
+    }
+
+    private long returnCountdownTime() {
+        return (timesArray.get(timerPos) * 1000) - timeElapsed;
+    }
     @Override
     public void onCreate() {
         super.onCreate();
