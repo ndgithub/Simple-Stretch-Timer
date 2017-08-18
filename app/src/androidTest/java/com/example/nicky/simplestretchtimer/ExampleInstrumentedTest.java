@@ -1,4 +1,4 @@
-package com.example.nicky.timerpractice;
+package com.example.nicky.simplestretchtimer;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

@@ -1,13 +1,11 @@
-package com.example.nicky.timerpractice;
+package com.example.nicky.simplestretchtimer;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -26,7 +24,8 @@ public class TimerService extends Service {
     LocalBroadcastManager localBroadcaster;
     static final public String TIMER_SERVICE_ONTICK_KEY = "com.example.nicky.timerpractice.timerservice.TIMEUPDATE";
     static final public String MILS_UNTIL_FINISHED_KEY = "mils til fin";
-    private boolean isRunning;
+    public boolean isRunning;
+    public boolean isForeground;
 
     static ArrayList<Integer> timesArray;
     private int timerPos;
@@ -108,13 +107,10 @@ public class TimerService extends Service {
         Log.v("***", "PAUSE");
     }
 
-    private void reset() {
+    public void reset() {
         timerPos = 0;
         timeElapsed = 0;
-        //TODO:Should reset also pause, (Google timer does)
-        if (isRunning) {
-            countDownTimer.cancel();
-        }
+        pause();
     }
 
     private long returnCountdownTime() {
@@ -128,7 +124,6 @@ public class TimerService extends Service {
             startTimer(returnCountdownTime());
             Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
         } else {
-            pause();
             reset();
             Toast.makeText(getApplicationContext(), "Ding, Ding Ding!!!", Toast.LENGTH_SHORT).show();
         }
@@ -161,6 +156,9 @@ public class TimerService extends Service {
 
     }
 
+public void onActivityResume() {
+
+}
 
 
 

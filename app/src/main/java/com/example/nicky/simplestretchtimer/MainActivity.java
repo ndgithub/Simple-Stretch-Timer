@@ -1,4 +1,4 @@
-package com.example.nicky.timerpractice;
+package com.example.nicky.simplestretchtimer;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 
 
@@ -33,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
     TimerService timerService;
     boolean isBound;
 
+    RemoteViews remoteView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,12 +46,13 @@ public class MainActivity extends AppCompatActivity {
         playButton = (Button) findViewById(R.id.button_play_pause);
         resetButton = (Button) findViewById(R.id.button_reset);
 
-        playButton.setOnClickListener(new View.OnClickListener()
+        remoteView = new RemoteViews(getPackageName(), R.layout.notification);
 
-        {
+
+        playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isRunning) {
+                if (!timerService.isRunning) {
                     play();
                 } else {
                     pause();
@@ -56,12 +60,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        resetButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                reset();
+
+            }
+        });
+        buildnotification();
         tickReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
                 textView.setText(secsRemaining + " ");
+
+                if (timerService.isForeground) {
+                    remoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
+                    // TODO: make secsRemainingString
+                    mNotificationManager.notify(1, mBuilder.build());
+                }
+
+
                 Log.v("*** - Receiver", "onRecieve");
+
             }
         };
 
@@ -70,16 +91,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Log.v("***", "onStart");
+
         LocalBroadcastManager.getInstance(this).registerReceiver(tickReceiver, new IntentFilter(TimerService.TIMER_SERVICE_ONTICK_KEY));
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
+        Log.v("***", "onStart");
     }
+
+
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.v("***", "onResume");
+
+        // TODO: make service cllbacks
     }
 
 
@@ -92,6 +118,11 @@ public class MainActivity extends AppCompatActivity {
     public void pause() {
         playButton.setText("Play");
         timerService.pause();
+    }
+
+    public void reset() {
+        playButton.setText("Play");
+        timerService.reset();
     }
 
 
@@ -107,7 +138,11 @@ public class MainActivity extends AppCompatActivity {
             TimerService.TimerBinder timerBinder = (TimerService.TimerBinder) service;
             timerService = timerBinder.getService();
             isBound = true;
+            timerService.stopForeground(true);
+            timerService.isForeground = false;
             Log.v("*** - MainActivity", "Service is bound");
+            Log.v("***", timerService.toString());
+
 
         }
 
@@ -129,12 +164,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.v("***", "onStop");
-        timerService.startForeground();
-        buildnotification();
-        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+        if (timerService.isRunning) {
+            timerService.startForeground(NOTIFICATION_ID, mBuilder.build());
+            timerService.isForeground = true;
 
-
-        // TODO: 8/17/17 Create notification
+        }
     }
 
 
@@ -146,13 +180,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     private void buildnotification() {
         mBuilder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_grade_black_18dp)
                         .setContent(remoteView);
-// Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(this, MainActivity.class);
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(MainActivity.class);
