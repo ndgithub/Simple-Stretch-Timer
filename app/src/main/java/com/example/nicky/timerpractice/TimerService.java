@@ -153,6 +153,19 @@ public class TimerService extends Service {
         return (timesArray.get(timerPos) * 1000) - timeElapsed;
     }
 
+    private void timerFinished() {
+        timerPos++;
+        if (isStretchesRemaining()) {
+            timeElapsed = 0;
+            startTimer(returnCountdownTime());
+            Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
+        } else {
+            pause();
+            reset();
+            Toast.makeText(getApplicationContext(), "Ding, Ding Ding!!!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
