@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.v("***", "onStop");
-        //LocalBroadcastManager.getInstance(this).unregisterReceiver(tickReceiver);
+        timerService.startForeground();
 
         // TODO: 8/17/17 Create notification
     }
@@ -135,16 +135,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.v("***", "onDestroy");
+
     }
 
 }
 
 //******Eventually stuff
+//Unregister broadcast recievers
 
-
-//TODO: Combine everything with other project.
-// startService() and binding together will prevent from being destroyed
-//Service should be destroyed when fully finished
 
 
 

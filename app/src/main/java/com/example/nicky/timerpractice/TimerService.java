@@ -23,7 +23,6 @@ import java.util.ArrayList;
 
 public class TimerService extends Service {
     private final IBinder mBinder = new TimerBinder();
-    MyCountdownTimer cdt;
     LocalBroadcastManager localBroadcaster;
     static final public String TIMER_SERVICE_ONTICK_KEY = "com.example.nicky.timerpractice.timerservice.TIMEUPDATE";
     static final public String MILS_UNTIL_FINISHED_KEY = "mils til fin";
@@ -68,30 +67,6 @@ public class TimerService extends Service {
     }
 
 
-    public void() {
-        isRunning = true;
-        Log.v("*** - Service", "PLAY");
-        cdt = new MyCountdownTimer(5000, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                Log.v("*** - Service ", "millisUntilFinished: " + millisUntilFinished);
-                Log.v("*** - Service", "Secs Rem: " + Math.ceil(millisUntilFinished / 1000.));
-                broadcastTick(millisUntilFinished);
-
-            }
-
-            @Override
-            public void onFinish() {
-                Log.v("***", "onFinish");
-                pause();
-                Toast.makeText(getApplicationContext(), "finished!", Toast.LENGTH_SHORT).show();
-
-            }
-        };
-        cdt.start();
-    }
-
-
     private void startTimer(long countdownTime) {
         final int TICK_INTERVAL = 1000;
         long leftover = countdownTime % TICK_INTERVAL;
@@ -119,34 +94,27 @@ public class TimerService extends Service {
 
     }
 
-    private void play() {
-        playButton.setText("pause");
-
-        Log.v("***", "PLAY");
+    public void play() {
         startTimer(returnCountdownTime());
         isRunning = true;
+        Log.v("***", "PLAY");
     }
 
 
-    private void pause() {
+    public void pause() {
         timeElapsed = (SystemClock.elapsedRealtime() - startingTime) + timeElapsed;
-        playButton.setText("play");
-
-        Log.v("***", "PAUSE");
         countDownTimer.cancel();
         isRunning = false;
+        Log.v("***", "PAUSE");
     }
 
     private void reset() {
         timerPos = 0;
         timeElapsed = 0;
-        textView.setText(timesArray.get(0) + " ");
         //TODO:Should reset also pause, (Google timer does)
         if (isRunning) {
             countDownTimer.cancel();
-            startTimer(returnCountdownTime());
         }
-
     }
 
     private long returnCountdownTime() {
@@ -166,10 +134,16 @@ public class TimerService extends Service {
         }
     }
 
+    private boolean isStretchesRemaining() {
+        return timerPos < timesArray.size();
+    }
+
+
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.v("*** - Service ", "onDestroy");
+        Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
 
     }
 
@@ -186,6 +160,8 @@ public class TimerService extends Service {
         }
 
     }
+
+
 
 
 }
