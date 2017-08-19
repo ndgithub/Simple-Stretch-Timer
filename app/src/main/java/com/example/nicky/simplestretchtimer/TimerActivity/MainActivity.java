@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer;
+package com.example.nicky.simplestretchtimer.TimerActivity;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -27,6 +27,7 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 import com.example.nicky.simplestretchtimer.data.StretchDbContract;
 

@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer;
+package com.example.nicky.simplestretchtimer.TimerActivity;
 
 import android.app.Service;
 import android.content.Intent;
@@ -9,8 +9,6 @@ import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;

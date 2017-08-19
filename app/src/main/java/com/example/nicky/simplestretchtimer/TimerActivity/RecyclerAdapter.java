@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer;
+package com.example.nicky.simplestretchtimer.TimerActivity;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -6,9 +6,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
