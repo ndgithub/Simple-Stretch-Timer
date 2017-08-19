@@ -31,11 +31,8 @@ public class TimerService extends Service {
     private int timerPos;
     public static long timeElapsed;
     public long startingTime;
-    TextView textView;
 
     MyCountdownTimer countDownTimer;
-    Button playButton;
-    Button resetButton;
     private final int TICK_INTERVAL = 1000;
 
 

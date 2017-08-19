@@ -25,9 +25,9 @@
         android:text="reset" />
 
 
-    <TextView
+    <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/test_view2"/>
+        android:id="@+id/recycler_view"/>
 
 </LinearLayout>
