@@ -11,8 +11,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.os.IBinder;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -34,14 +37,13 @@ import com.example.nicky.simplestretchtimer.data.StretchDbContract;
 import java.util.ArrayList;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     NotificationManager mNotificationManager;
     NotificationCompat.Builder mBuilder;
     private final int NOTIFICATION_ID = 1;
 
     private TextView mTextView;
-    private TextView mTextView2;
     private Button mPlayButton;
     private Button mResetButton;
 
@@ -63,10 +65,12 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mLinearLayoutManager = new LinearLayoutManager(this);
 
+
         mStretchArray = new ArrayList<>();
+        getSupportLoaderManager().initLoader(1, null, this);
 
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
-        dbToArray();
+
         mAdapter = new RecyclerAdapter(mStretchArray);
 
         mRecyclerView.setAdapter(mAdapter);
@@ -284,15 +288,48 @@ public class MainActivity extends AppCompatActivity {
         cv.put(StretchDbContract.Stretches.TIME, "23");
 
         getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
-        dbToArray();
-        mAdapter.notifyDataSetChanged();
+        //dbToArray();
+        //mAdapter.notifyDataSetChanged();
     }
 
+    //Loader Callbacks ************************
+    @Override
+    public Loader onCreateLoader(int id, Bundle args) {
+        Log.v("******", "onCreateLoader");
+        String[] projection = {StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
+        CursorLoader cursorLoader = new CursorLoader(this, StretchDbContract.Stretches.CONTENT_URI, projection, null, null, null);
+
+        return cursorLoader;
+    }
+
+    @Override
+    public void onLoadFinished(Loader loader, Cursor cursor) {
+        mStretchArray.clear();
+        cursor.moveToFirst();
+        do {
+            String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
+            int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
+            mStretchArray.add(new Stretch(name, time));
+            Log.v("*****asdf", name);
+        } while (cursor.moveToNext());
+
+        //cursor.close();
+        mAdapter.notifyDataSetChanged();
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader loader) {
+        mAdapter.notifyDataSetChanged();
+        Log.v("******", "onLoaderReset");
+    }
+    //Loader Callbacks ************************
 
 }
 
 //******Eventually stuff
 //Unregister broadcast recievers
+
 
 
 

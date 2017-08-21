@@ -62,6 +62,7 @@ public class StretchProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
+        cursor.setNotificationUri(getContext().getContentResolver(),uri);
         return cursor;
     }
 
@@ -80,15 +81,16 @@ public class StretchProvider extends ContentProvider {
         switch (match) {
             case STRETCHES:
                 if (id == -1) {
-                    //TODO: Replace with Timber
                     Timber.v("Failed to insert row for " + uri);
                     Toast.makeText(getContext(),"Woops! Couldn't add stretch",Toast.LENGTH_SHORT).show();
                     return null;
                 }
+                getContext().getContentResolver().notifyChange(uri, null);
                 return ContentUris.withAppendedId(uri, id);
             default:
                 throw new IllegalArgumentException("Insertion is not supported for " + uri);
         }
+
     }
 
 
