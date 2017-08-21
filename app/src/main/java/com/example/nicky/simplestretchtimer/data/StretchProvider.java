@@ -18,7 +18,6 @@ import timber.log.Timber;
  * Created by Nicky on 7/28/17.
  */
 
-//TODO: Complete Provider
 
 public class StretchProvider extends ContentProvider {
     private SQLiteOpenHelper dbHelper;
@@ -80,7 +79,6 @@ public class StretchProvider extends ContentProvider {
         switch (match) {
             case STRETCHES:
                 if (id == -1) {
-                    //TODO: Replace with Timber
                     Timber.v("Failed to insert row for " + uri);
                     Toast.makeText(getContext(),"Woops! Couldn't add stretch",Toast.LENGTH_SHORT).show();
                     return null;

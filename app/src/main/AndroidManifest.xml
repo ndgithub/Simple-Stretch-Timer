@@ -15,7 +15,8 @@
             android:name=".data.StretchProvider" />
         <service android:name=".TimerActivity.TimerService" />
         <activity
-            android:name=".TimerActivity.MainActivity">
+            android:name=".TimerActivity.MainActivity"
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
