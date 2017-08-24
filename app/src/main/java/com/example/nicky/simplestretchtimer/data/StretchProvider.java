@@ -18,7 +18,6 @@ import timber.log.Timber;
  * Created by Nicky on 7/28/17.
  */
 
-//TODO: Complete Provider
 
 public class StretchProvider extends ContentProvider {
     private SQLiteOpenHelper dbHelper;

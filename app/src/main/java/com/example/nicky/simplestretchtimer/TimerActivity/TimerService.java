@@ -11,7 +11,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.nicky.simplestretchtimer.data.Stretch;
+
 import java.util.ArrayList;
+
+import timber.log.Timber;
 
 /**
  * Created by Nicky on 8/13/17.
@@ -20,26 +24,42 @@ import java.util.ArrayList;
 public class TimerService extends Service {
     private final IBinder mBinder = new TimerBinder();
     LocalBroadcastManager localBroadcaster;
-    static final public String TIMER_SERVICE_ONTICK_KEY = "com.example.nicky.timerpractice.timerservice.TIMEUPDATE";
-    static final public String MILS_UNTIL_FINISHED_KEY = "mils til fin";
-    public boolean isRunning;
-    public boolean isForeground;
+
+    static final public String ONTICK_KEY = "com.example.nicky.timerpractice.timerservice.TIMEUPDATE";
+    static final public String MILS_UNTIL_FINISHED_KEY = "milsRemaining";
+
+    static final public String POSITION_CHANGED_KEY = "com.example.nicky.timerpractice.timerservice.POSITIONUPDATE";
+    static final public String CURRENT_POSITION_KEY = "position";
+
+
+    private boolean mRunning;
+    private boolean mForeground;
 
     static ArrayList<Integer> timesArray;
-    private int timerPos;
-    public static long timeElapsed;
-    public long startingTime;
+    private int mTimerPos;
+    private static long mTimeElapsed;
+    public long mStartingTime;
 
     MyCountdownTimer countDownTimer;
     private final int TICK_INTERVAL = 1000;
 
+    public boolean isRunning() {
+        return mRunning;
+    }
+
+    public boolean isForeground() {
+        return mForeground;
+    }
+
+    public void setForegroundState(boolean foreground) {
+        mForeground = foreground;
+    }
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.v("*** - Service ", "onCreate");
         localBroadcaster = LocalBroadcastManager.getInstance(this);
-
     }
 
     @Override
@@ -47,10 +67,6 @@ public class TimerService extends Service {
         Toast.makeText(this, "Service onStartCommand", Toast.LENGTH_SHORT).show();
         Log.v("*** - Service ", "onStartCommand");
         timesArray = new ArrayList<>();
-        timesArray.add(3);
-        timesArray.add(5);
-        timesArray.add(7);
-
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -61,61 +77,68 @@ public class TimerService extends Service {
     }
 
 
+    public void play() {
+        startTimer(returnCountdownTime());
+        Log.v("***", "PLAY");
+    }
+
+
+    public void pause() {
+        mTimeElapsed = (SystemClock.elapsedRealtime() - mStartingTime) + mTimeElapsed;
+        stopRunning();
+    }
+
+    public void reset() {
+        if (mRunning) {
+            stopRunning();
+        }
+        goToStretchPosition(0);
+    }
+
+
     private void startTimer(long countdownTime) {
         final int TICK_INTERVAL = 1000;
         long leftover = countdownTime % TICK_INTERVAL;
-        final Handler handler = new Handler();
-        startingTime = SystemClock.elapsedRealtime();
+        mStartingTime = SystemClock.elapsedRealtime();
         countDownTimer = new MyCountdownTimer(countdownTime - leftover, TICK_INTERVAL) {
             @Override
             public void onTick(long millisUntilFinished) {
                 broadcastTick(millisUntilFinished);
                 Log.v("***", "millisUntilFinished: " + millisUntilFinished);
-
             }
 
             @Override
             public void onFinish() {
+                // TODO: Add broadcast. Remove highliting broadcast
                 timerFinished();
             }
         };
+        Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 countDownTimer.start();
             }
         }, leftover);
-
-    }
-
-    public void play() {
-        startTimer(returnCountdownTime());
-        isRunning = true;
-        Log.v("***", "PLAY");
+        mRunning = true;
     }
 
 
-    public void pause() {
-        timeElapsed = (SystemClock.elapsedRealtime() - startingTime) + timeElapsed;
+    private void stopRunning() {
         countDownTimer.cancel();
-        isRunning = false;
-        Log.v("***", "PAUSE");
-    }
+        mRunning = false;
 
-    public void reset() {
-        timerPos = 0;
-        timeElapsed = 0;
-        pause();
     }
 
     private long returnCountdownTime() {
-        return (timesArray.get(timerPos) * 1000) - timeElapsed;
+        return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
     }
 
     private void timerFinished() {
-        timerPos++;
+
         if (isStretchesRemaining()) {
-            timeElapsed = 0;
+            Timber.v("Timer Position: " + mTimerPos);
+            goToStretchPosition(mTimerPos + 1);
             startTimer(returnCountdownTime());
             Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
         } else {
@@ -125,9 +148,15 @@ public class TimerService extends Service {
     }
 
     private boolean isStretchesRemaining() {
-        return timerPos < timesArray.size();
+        return mTimerPos < timesArray.size() - 1;
     }
 
+    private void goToStretchPosition(int timerPosition) {
+        mTimerPos = timerPosition;
+        mTimeElapsed = 0;
+        broadcastPositionChange(mTimerPos);
+        Log.v("***", "TimerPos: " + mTimerPos);
+    }
 
     @Override
     public void onDestroy() {
@@ -138,10 +167,17 @@ public class TimerService extends Service {
     }
 
     private void broadcastTick(long milsUntilFinished) {
-        Intent tickIntent = new Intent(TIMER_SERVICE_ONTICK_KEY);
+        Intent tickIntent = new Intent(ONTICK_KEY);
         tickIntent.putExtra(MILS_UNTIL_FINISHED_KEY, Math.ceil(milsUntilFinished / 1000.));
         localBroadcaster.sendBroadcast(tickIntent);
     }
+
+    private void broadcastPositionChange(int newPosition) {
+        Intent posIntent = new Intent(POSITION_CHANGED_KEY);
+        posIntent.putExtra(CURRENT_POSITION_KEY, newPosition);
+        localBroadcaster.sendBroadcast(posIntent);
+    }
+
 
     public class TimerBinder extends Binder {
 
@@ -151,13 +187,16 @@ public class TimerService extends Service {
 
     }
 
-public void onActivityResume() {
-
-}
-
+    public void updateStretches(ArrayList<Stretch> stretches) {
+        timesArray.clear();
+        for (Stretch stretch : stretches) {
+            timesArray.add(stretch.getTime());
+        }
+    }
 
 
 }
 
 
 // TODO: dont' create new intent on every tick .
+// TODO: program on interfaces check .

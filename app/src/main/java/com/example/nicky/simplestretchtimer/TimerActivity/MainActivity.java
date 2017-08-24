@@ -17,6 +17,7 @@ import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -26,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,6 +38,10 @@ import com.example.nicky.simplestretchtimer.data.StretchDbContract;
 
 import java.util.ArrayList;
 
+import butterknife.BindView;
+import butterknife.BindViews;
+import butterknife.ButterKnife;
+
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -43,48 +49,56 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     NotificationCompat.Builder mBuilder;
     private final int NOTIFICATION_ID = 1;
 
-    private TextView mTextView;
-    private Button mPlayButton;
-    private Button mResetButton;
-
     private BroadcastReceiver mTickReceiver;
+    private BroadcastReceiver mPosChangeReceiver;
     private TimerService mTimerService;
     boolean isBound;
 
-    private RecyclerView mRecyclerView;
-    private LinearLayoutManager mLinearLayoutManager;
+    private int mTimerPos;
+    static final public String CURRENT_POSITION_KEY = "position";
+
+    private MyLinearLayoutManager mLinearLayoutManager;
     private RecyclerAdapter mAdapter;
     private ArrayList<Stretch> mStretchArray;
     private RemoteViews mRemoteView;
+
+    @BindView(R.id.test_view1)
+    TextView mTextView;
+    @BindView(R.id.button_play_pause)
+    Button mPlayButton;
+    @BindView(R.id.button_reset)
+    Button mResetButton;
+    @BindView(R.id.recycler_view)
+    RecyclerView mRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.v("***", "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        mLinearLayoutManager = new LinearLayoutManager(this);
+        ButterKnife.bind(this);
 
 
-        mStretchArray = new ArrayList<>();
-        getSupportLoaderManager().initLoader(1, null, this);
+        if (savedInstanceState != null) {
+            mTimerPos = savedInstanceState.getInt(CURRENT_POSITION_KEY);
 
+        }
+
+
+        mLinearLayoutManager = new MyLinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
-
-        mAdapter = new RecyclerAdapter(mStretchArray);
-
+        mStretchArray = new ArrayList<>();
+        mAdapter = new RecyclerAdapter(mStretchArray,mTimerPos);
         mRecyclerView.setAdapter(mAdapter);
 
-        mTextView = (TextView) findViewById(R.id.test_view1);
-        mPlayButton = (Button) findViewById(R.id.button_play_pause);
-        mResetButton = (Button) findViewById(R.id.button_reset);
+        startService(new Intent(this, TimerService.class));
+        bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
-
 
         mPlayButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!mTimerService.isRunning) {
+                if (!mTimerService.isRunning()) {
                     play();
                 } else {
                     pause();
@@ -99,50 +113,24 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             }
         });
+
         buildnotification();
-        mTickReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                mTextView.setText(secsRemaining + " ");
-
-                if (mTimerService.isForeground) {
-                    mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
-                    // TODO: make secsRemainingString
-                    mNotificationManager.notify(1, mBuilder.build());
-                }
+        createRegisterBroadcastReceivers();
 
 
-                Log.v("*** - Receiver", "onRecieve");
-
-            }
-        };
 
     }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(mTickReceiver, new IntentFilter(TimerService.TIMER_SERVICE_ONTICK_KEY));
-        startService(new Intent(this, TimerService.class));
-        bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
-        Log.v("***", "onStart");
-    }
-
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.v("***", "onResume");
-
-        // TODO: make service cllbacks
+        Log.v("!!@***", "onResume");
     }
-
 
     public void play() {
         mPlayButton.setText("PAUSE");
         mTimerService.play();
+        // TODO:
 
     }
 
@@ -154,6 +142,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void reset() {
         mPlayButton.setText("Play");
         mTimerService.reset();
+        mTextView.setText(String.valueOf(mStretchArray.get(0).getTime()));
     }
 
     @Override
@@ -176,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         if (id == R.id.add_entry) {
-            addTestEntry();
+            addStretch("asdf", 5);
             return true;
         }
 
@@ -184,10 +173,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        Log.v("***", "onSaveInstanceState");
+        outState.putInt(CURRENT_POSITION_KEY,mTimerPos);
     }
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -197,11 +187,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mTimerService = timerBinder.getService();
             isBound = true;
             mTimerService.stopForeground(true);
-            mTimerService.isForeground = false;
+            mTimerService.setForegroundState(false);
             Log.v("*** - MainActivity", "Service is bound");
             Log.v("***", mTimerService.toString());
-
-
+            initializeLoader();
         }
 
         @Override
@@ -211,32 +200,101 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     };
 
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.v("***", "onPause");
-    }
-
     @Override
     protected void onStop() {
         super.onStop();
-        Log.v("***", "onStop");
-        if (mTimerService.isRunning) {
+        if (mTimerService.isRunning()) {
             mTimerService.startForeground(NOTIFICATION_ID, mBuilder.build());
-            mTimerService.isForeground = true;
-
+            mTimerService.setForegroundState(true);
         }
     }
 
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.v("***", "onDestroy");
+
+
+    public void addStretch(String name, int time) {
+        ContentValues cv = new ContentValues();
+        cv.put(StretchDbContract.Stretches.NAME, name);
+        cv.put(StretchDbContract.Stretches.TIME, time);
+        getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
+    }
+
+
+    public void initializeLoader() {
+        getSupportLoaderManager().initLoader(1, null, this);
 
     }
 
+    @Override
+    public Loader onCreateLoader(int id, Bundle args) {
+        Log.v("**Loader", "onCreateLoader");
+        String[] projection = {StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
+        CursorLoader cursorLoader = new CursorLoader(this, StretchDbContract.Stretches.CONTENT_URI, projection, null, null, null);
+
+        return cursorLoader;
+    }
+
+    @Override
+    public void onLoadFinished(Loader loader, Cursor cursor) {
+        mStretchArray.clear();
+        cursor.moveToFirst();
+        do {
+            String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
+            int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
+            mStretchArray.add(new Stretch(name, time));
+        } while (cursor.moveToNext());
+
+        //cursor.close();
+        mAdapter.notifyDataSetChanged();
+        Log.v("*****Loader", "onLoadFinished");
+        mTimerService.updateStretches(mStretchArray);
+    }
+
+    @Override
+    public void onLoaderReset(Loader loader) {
+        mAdapter.notifyDataSetChanged();
+        Log.v("******", "onLoaderReset");
+    }
+
+    private void createRegisterBroadcastReceivers() {
+        mTickReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
+                mTextView.setText(secsRemaining + " ");
+
+                if (mTimerService.isForeground()) {
+                    mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
+                    // TODO: make secsRemainingString
+                    mNotificationManager.notify(1, mBuilder.build());
+                }
+            }
+        };
+
+        mPosChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mTimerPos = intent.getIntExtra(TimerService.CURRENT_POSITION_KEY,0);
+                for (int i = 0; i < mStretchArray.size(); i++) {
+                    LinearLayout currentView = (LinearLayout) mLinearLayoutManager.findViewByPosition(i);
+                    currentView.setBackgroundColor(0xffffffff);
+                }
+                highlightCurrentStretch(mTimerPos);
+
+            }
+        };
+
+        LocalBroadcastManager.getInstance(this).
+                registerReceiver(mTickReceiver, new IntentFilter(TimerService.ONTICK_KEY));
+        LocalBroadcastManager.getInstance(this).
+                registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
+
+    }
+
+    private void highlightCurrentStretch(int pos) {
+        LinearLayout currentView = (LinearLayout) mLinearLayoutManager.findViewByPosition(pos);
+        currentView.setBackgroundColor(0xffcccccc);
+    }
 
     private void buildnotification() {
         mBuilder =
@@ -256,75 +314,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     }
-
-    private void dbToArray() {
-        mStretchArray.clear();
-        String[] projection = {StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
-
-        Cursor cursor = getContentResolver().query(
-                StretchDbContract.Stretches.CONTENT_URI,   // The content URI of the words table
-                projection,             // The columns to return for each row
-                null,                   // Selection criteria
-                null,                   // Selection criteria
-                null);
-        if (cursor == null) {
-            Toast.makeText(getApplicationContext(), "Cursor is null", Toast.LENGTH_LONG).show();
-            return;
-        }
-        cursor.moveToFirst();
-        do {
-            String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
-            int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
-            mStretchArray.add(new Stretch(name, time));
-        } while (cursor.moveToNext());
-
-        cursor.close();
-    }
-
-    private void addTestEntry() {
-
-        ContentValues cv = new ContentValues();
-        cv.put(StretchDbContract.Stretches.NAME, "caca");
-        cv.put(StretchDbContract.Stretches.TIME, "23");
-
-        getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
-        //dbToArray();
-        //mAdapter.notifyDataSetChanged();
-    }
-
-    //Loader Callbacks ************************
-    @Override
-    public Loader onCreateLoader(int id, Bundle args) {
-        Log.v("******", "onCreateLoader");
-        String[] projection = {StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
-        CursorLoader cursorLoader = new CursorLoader(this, StretchDbContract.Stretches.CONTENT_URI, projection, null, null, null);
-
-        return cursorLoader;
-    }
-
-    @Override
-    public void onLoadFinished(Loader loader, Cursor cursor) {
-        mStretchArray.clear();
-        cursor.moveToFirst();
-        do {
-            String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
-            int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
-            mStretchArray.add(new Stretch(name, time));
-            Log.v("*****asdf", name);
-        } while (cursor.moveToNext());
-
-        //cursor.close();
-        mAdapter.notifyDataSetChanged();
-
-    }
-
-    @Override
-    public void onLoaderReset(Loader loader) {
-        mAdapter.notifyDataSetChanged();
-        Log.v("******", "onLoaderReset");
-    }
-    //Loader Callbacks ************************
-
 }
 
 //******Eventually stuff

@@ -35,7 +35,7 @@ public class StretchDbHelper extends SQLiteOpenHelper {
                 StretchDbContract.Stretches.NAME + "," +
                 StretchDbContract.Stretches.TIME + "," +
                 StretchDbContract.Stretches.POSITION +
-                ") VALUES ('First Stretch',30,0)";
+                ") VALUES ('First Stretch',5,0)";
 
         Timber.v(CREATE_TABLE_QUERY);
         Timber.v(CREATE_FIRST_ENTRY_STATEMENT);
