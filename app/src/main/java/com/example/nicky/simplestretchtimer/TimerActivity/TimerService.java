@@ -36,7 +36,7 @@ public class TimerService extends Service {
     private boolean mForeground;
 
     static ArrayList<Integer> timesArray;
-    private int mTimerPos;
+    public int mTimerPos;
     private static long mTimeElapsed;
     public long mStartingTime;
 
@@ -60,6 +60,7 @@ public class TimerService extends Service {
         super.onCreate();
         Log.v("*** - Service ", "onCreate");
         localBroadcaster = LocalBroadcastManager.getInstance(this);
+        mTimerPos = 0;
     }
 
     @Override
@@ -192,6 +193,10 @@ public class TimerService extends Service {
         for (Stretch stretch : stretches) {
             timesArray.add(stretch.getTime());
         }
+    }
+
+    public int getTimerPos() {
+        return mTimerPos;
     }
 
 

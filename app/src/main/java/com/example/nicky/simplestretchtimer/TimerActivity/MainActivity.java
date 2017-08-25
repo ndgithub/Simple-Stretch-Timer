@@ -53,9 +53,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private BroadcastReceiver mPosChangeReceiver;
     private TimerService mTimerService;
     boolean isBound;
+    private final String IS_BOUND = "isBound";
 
     private int mTimerPos;
-    static final public String CURRENT_POSITION_KEY = "position";
+    private final String CURRENT_POSITION_KEY = "position";
 
     private MyLinearLayoutManager mLinearLayoutManager;
     private RecyclerAdapter mAdapter;
@@ -78,21 +79,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-
-        if (savedInstanceState != null) {
-            mTimerPos = savedInstanceState.getInt(CURRENT_POSITION_KEY);
-
-        }
-
-
-        mLinearLayoutManager = new MyLinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLinearLayoutManager);
-        mStretchArray = new ArrayList<>();
-        mAdapter = new RecyclerAdapter(mStretchArray,mTimerPos);
-        mRecyclerView.setAdapter(mAdapter);
-
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
+
+
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
 
         mPlayButton.setOnClickListener(new View.OnClickListener() {
@@ -116,7 +106,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         buildnotification();
         createRegisterBroadcastReceivers();
-
 
 
     }
@@ -177,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt(CURRENT_POSITION_KEY,mTimerPos);
+        outState.putBoolean(IS_BOUND, isBound);
     }
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -188,6 +177,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             isBound = true;
             mTimerService.stopForeground(true);
             mTimerService.setForegroundState(false);
+
+            mTimerPos = mTimerService.getTimerPos();
+            setupRecyclerView();
             Log.v("*** - MainActivity", "Service is bound");
             Log.v("***", mTimerService.toString());
             initializeLoader();
@@ -200,6 +192,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     };
 
+    private void setupRecyclerView() {
+        mLinearLayoutManager = new MyLinearLayoutManager(getApplicationContext());
+        mRecyclerView.setLayoutManager(mLinearLayoutManager);
+        mStretchArray = new ArrayList<>();
+        mAdapter = new RecyclerAdapter(mStretchArray, mTimerPos);
+        mRecyclerView.setAdapter(mAdapter);
+    }
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -208,8 +208,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mTimerService.setForegroundState(true);
         }
     }
-
-
 
 
     public void addStretch(String name, int time) {
@@ -274,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mPosChangeReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                mTimerPos = intent.getIntExtra(TimerService.CURRENT_POSITION_KEY,0);
+                mTimerPos = intent.getIntExtra(TimerService.CURRENT_POSITION_KEY, 0);
                 for (int i = 0; i < mStretchArray.size(); i++) {
                     LinearLayout currentView = (LinearLayout) mLinearLayoutManager.findViewByPosition(i);
                     currentView.setBackgroundColor(0xffffffff);
@@ -318,7 +316,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 //******Eventually stuff
 //Unregister broadcast recievers
-
+//need to cancel service
 
 
 
