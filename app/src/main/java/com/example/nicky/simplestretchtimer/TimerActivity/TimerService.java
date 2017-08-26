@@ -22,6 +22,7 @@ import timber.log.Timber;
  */
 
 public class TimerService extends Service {
+
     private final IBinder mBinder = new TimerBinder();
     LocalBroadcastManager localBroadcaster;
 
@@ -34,6 +35,7 @@ public class TimerService extends Service {
 
     private boolean mRunning;
     private boolean mForeground;
+
 
     static ArrayList<Integer> timesArray;
     public int mTimerPos;
@@ -67,7 +69,9 @@ public class TimerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Toast.makeText(this, "Service onStartCommand", Toast.LENGTH_SHORT).show();
         Log.v("*** - Service ", "onStartCommand");
-        timesArray = new ArrayList<>();
+        stopForeground(STOP_FOREGROUND_REMOVE);
+        setForegroundState(false);
+
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -110,7 +114,6 @@ public class TimerService extends Service {
 
             @Override
             public void onFinish() {
-                // TODO: Add broadcast. Remove highliting broadcast
                 timerFinished();
             }
         };
@@ -132,7 +135,7 @@ public class TimerService extends Service {
     }
 
     private long returnCountdownTime() {
-        return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
+      return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
     }
 
     private void timerFinished() {
@@ -145,6 +148,8 @@ public class TimerService extends Service {
         } else {
             reset();
             Toast.makeText(getApplicationContext(), "Ding, Ding Ding!!!", Toast.LENGTH_SHORT).show();
+            stopSelf();
+
         }
     }
 
@@ -189,7 +194,7 @@ public class TimerService extends Service {
     }
 
     public void updateStretches(ArrayList<Stretch> stretches) {
-        timesArray.clear();
+        timesArray = new ArrayList<>();
         for (Stretch stretch : stretches) {
             timesArray.add(stretch.getTime());
         }
