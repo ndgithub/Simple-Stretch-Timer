@@ -69,7 +69,7 @@ public class TimerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Toast.makeText(this, "Service onStartCommand", Toast.LENGTH_SHORT).show();
         Log.v("*** - Service ", "onStartCommand");
-        stopForeground(STOP_FOREGROUND_REMOVE);
+        stopForeground(true);
         setForegroundState(false);
 
         return super.onStartCommand(intent, flags, startId);

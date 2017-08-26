@@ -1,5 +1,7 @@
 package com.example.nicky.simplestretchtimer.TimerActivity;
 
+import android.app.Activity;
+import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -7,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
@@ -19,26 +22,20 @@ import java.util.ArrayList;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     ArrayList<Stretch> mStretches;
-    private static final int FOOTER_VIEW = 1;
-    private static final int STRETCH_VIEW = 0;
 
     private TextView mStretchName;
     private TextView mStretchTime;
     private LinearLayout mContainerView;
     private int mTimerPos;
 
-    public RecyclerAdapter(ArrayList<Stretch> stretches,int timerPos) {
+
+    public RecyclerAdapter(ArrayList<Stretch> stretches, int timerPos) {
         mStretches = stretches;
         mTimerPos = timerPos;
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        if (viewType == FOOTER_VIEW) {
-            View inflatedView = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.add_button, parent, false);
-            return new FooterViewHolder(inflatedView);
-        }
         View inflatedView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.recycler_list_item, parent, false);
         return new StretchHolder(inflatedView);
@@ -47,30 +44,21 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     @Override
     public int getItemViewType(int position) {
-    if (position == mStretches.size()) {
-        Log.v("!!@***viewtype: ", "footer");
-        return FOOTER_VIEW;
-
-    } else {
-        Log.v("!!@***viewtype: ", "stretch");
-        return STRETCH_VIEW;
-    }
+        return super.getItemViewType(position);
 
     }
-
 
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        if (position < mStretches.size()) {
-            Stretch stretch = mStretches.get(position);
-            mStretchName.setText(stretch.getName());
-            mStretchTime.setText(String.valueOf(stretch.getTime()));
-            if (position == mTimerPos) {
-                mContainerView.setBackgroundColor(0xffffcccc);
-            }
+
+        Stretch stretch = mStretches.get(position);
+        mStretchName.setText(stretch.getName());
+        mStretchTime.setText(String.valueOf(stretch.getTime()));
+        if (position == mTimerPos) {
+            mContainerView.setBackgroundColor(0xffccffcc);
         }
-        //else its footer view
+
         Log.v("***Adapter", "position: " + position);
 
     }
@@ -78,7 +66,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public int getItemCount() {
         //Adding one to size so last position can be footer (Add Stretch)
-        return mStretches.size() + 1;
+        return mStretches.size();
     }
 
 
@@ -93,11 +81,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     }
 
-    public class FooterViewHolder extends RecyclerView.ViewHolder {
-        public FooterViewHolder(View view) {
-            super(view);
-        }
-    }
+
 }
 
 

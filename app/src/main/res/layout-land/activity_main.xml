@@ -2,12 +2,55 @@
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
 
-    <include layout="@layout/stretches_include" />
+    <LinearLayout android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="#ccccff"
+        xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <include layout="@layout/display_include" />
+        <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/test_view1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hello World!"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/button_play_pause"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="play" />
+
+        <Button
+            android:id="@+id/button_reset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="reset" />
+
+
+    </LinearLayout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#ffcccc" />
+
+        <Button android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add Stretch"/>
+    </LinearLayout>
+
 
 
 </LinearLayout>

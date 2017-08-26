@@ -59,10 +59,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private int mTimerPos;
     private final String CURRENT_POSITION_KEY = "position";
 
-    private MyLinearLayoutManager mLinearLayoutManager;
+    private LinearLayoutManager mLinearLayoutManager;
     private RecyclerAdapter mAdapter;
     private ArrayList<Stretch> mStretchArray;
     private RemoteViews mRemoteView;
+    RecyclerView mRecyclerView;
 
     @BindView(R.id.test_view1)
     TextView mTextView;
@@ -70,8 +71,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     Button mPlayButton;
     @BindView(R.id.button_reset)
     Button mResetButton;
-    @BindView(R.id.recycler_view)
-    RecyclerView mRecyclerView;
+//    @BindView(R.id.recycler_view)
+
 
     @OnClick(R.id.button_play_pause)
     public void playButton() {
@@ -94,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-
+        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
 
 
@@ -108,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onStart() {
         super.onStart();
-
+        mNotificationManager.cancelAll();
 
         ServiceConnection serviceConnection = new ServiceConnection() {
             @Override
@@ -116,25 +117,25 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 TimerService.TimerBinder timerBinder = (TimerService.TimerBinder) service;
                 mTimerService = timerBinder.getService();
                 isBound = true;
-
-
                 mTimerPos = mTimerService.getTimerPos();
                 setupRecyclerView();
                 Log.v("*** - MainActivity", "Service is bound");
-                Log.v("***", mTimerService.toString());
+                Log.v("***12", mTimerService.toString());
+                mTimerService.stopForeground(true);
 
             }
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                //isBound = false;
+                isBound = false;
                 Log.v("*** - MainActivity", "Service is un-bound");
             }
         };
 
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
-        Log.v("Act. LifeCycle", "onStart" );
+
+        Log.v("Act. LifeCycle", "onStart");
 
     }
 
@@ -143,7 +144,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onResume();
         Log.v("Act. LifeCycle", "onResume");
     }
-
 
 
     public void playTimer() {
@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void setupRecyclerView() {
 
-        mLinearLayoutManager = new MyLinearLayoutManager(getApplicationContext());
+        mLinearLayoutManager = new LinearLayoutManager(getApplicationContext());
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
         mStretchArray = new ArrayList<>();
         mAdapter = new RecyclerAdapter(mStretchArray, mTimerPos);
@@ -231,14 +231,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public void addStretch(String name, int time) {
         ContentValues cv = new ContentValues();
+        for (int i = 0; i < 20; i++) {
+
         cv.put(StretchDbContract.Stretches.NAME, name);
         cv.put(StretchDbContract.Stretches.TIME, time);
         getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
+        }
+        // TODO: scroll to bottom of recycyler view
     }
-
-
-
-
 
 
 //////////////////////// Cursor Loader Stuff \\\\\\\\\\\\\\\\\\\\\\\\
@@ -292,8 +292,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onReceive(Context context, Intent intent) {
                 mTimerPos = intent.getIntExtra(TimerService.CURRENT_POSITION_KEY, 0);
-                highlightCurrentStretch();
-
+                if (mLinearLayoutManager.getChildCount() >= mTimerPos) {
+                    highlightCurrentStretch();
+                }
             }
         };
 
@@ -305,12 +306,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void highlightCurrentStretch() {
-        for (int i = 0; i < mStretchArray.size(); i++) {
+        for (int i = 0; i < mLinearLayoutManager.getChildCount(); i++) {
             LinearLayout currentView = (LinearLayout) mLinearLayoutManager.findViewByPosition(i);
             currentView.setBackgroundColor(0xffffffff);
         }
-            LinearLayout currentStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
-            currentStretch.setBackgroundColor(0xffcccccc);
+        LinearLayout currentStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
+        currentStretch.setBackgroundColor(0xffcccccc);
 
     }
 
