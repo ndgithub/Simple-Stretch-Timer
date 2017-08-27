@@ -60,10 +60,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private final String CURRENT_POSITION_KEY = "position";
 
     private LinearLayoutManager mLinearLayoutManager;
-    private RecyclerAdapter mAdapter;
+    private StretchAdapter mAdapter;
     private ArrayList<Stretch> mStretchArray;
     private RemoteViews mRemoteView;
-    RecyclerView mRecyclerView;
 
     @BindView(R.id.test_view1)
     TextView mTextView;
@@ -71,8 +70,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     Button mPlayButton;
     @BindView(R.id.button_reset)
     Button mResetButton;
-//    @BindView(R.id.recycler_view)
-
+    @BindView(R.id.recycler_view)
+    RecyclerView mRecyclerView;
+    @BindView(R.id.add_button)
+    Button mAddButton;
 
     @OnClick(R.id.button_play_pause)
     public void playButton() {
@@ -82,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             pauseTimer();
         }
     }
+
 
     @OnClick(R.id.button_reset)
     public void resetButton() {
@@ -97,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
-
+        mAddButton.setOnClickListener(v -> addStretch("New Stretch: ", 5));
 
         buildNotification();
         createRegisterBroadcastReceivers();
@@ -135,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
 
+        Log.v("Act. LifeCycle", "onStart");
         Log.v("Act. LifeCycle", "onStart");
 
     }
@@ -207,8 +210,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mLinearLayoutManager = new LinearLayoutManager(getApplicationContext());
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
         mStretchArray = new ArrayList<>();
-        mAdapter = new RecyclerAdapter(mStretchArray, mTimerPos);
+        mAdapter = new StretchAdapter(mStretchArray, mTimerPos,this);
         mRecyclerView.setAdapter(mAdapter);
+        mRecyclerView.setItemViewCacheSize(0);
         initializeLoader(); //initializeLoader must stay at end of this function.
     }
 
@@ -230,14 +234,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     public void addStretch(String name, int time) {
+        // TODO: scroll to bottom of recycyler view
         ContentValues cv = new ContentValues();
-        for (int i = 0; i < 20; i++) {
-
         cv.put(StretchDbContract.Stretches.NAME, name);
         cv.put(StretchDbContract.Stretches.TIME, time);
         getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
-        }
-        // TODO: scroll to bottom of recycyler view
+
+
     }
 
 
@@ -246,7 +249,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public Loader onCreateLoader(int id, Bundle args) {
         Log.v("**Loader", "onCreateLoader");
-        String[] projection = {StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
+        String[] projection = {StretchDbContract.Stretches._ID, StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
         CursorLoader cursorLoader = new CursorLoader(this, StretchDbContract.Stretches.CONTENT_URI, projection, null, null, null);
 
         return cursorLoader;
@@ -259,7 +262,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         do {
             String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
             int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
-            mStretchArray.add(new Stretch(name, time));
+            String addedPos = cursor.getString(0);
+            mStretchArray.add(new Stretch(name, time, addedPos));
         } while (cursor.moveToNext());
 
         mAdapter.notifyDataSetChanged();
@@ -306,12 +310,27 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void highlightCurrentStretch() {
-        for (int i = 0; i < mLinearLayoutManager.getChildCount(); i++) {
-            LinearLayout currentView = (LinearLayout) mLinearLayoutManager.findViewByPosition(i);
-            currentView.setBackgroundColor(0xffffffff);
+//        for (int i = 1; i < mStretchArray.size(); i++) {
+//
+//            Log.v("***h","i: " + i);
+//            LinearLayout currentView = (LinearLayout) mRecyclerView.findViewById();
+//            currentView.setBackgroundColor(0xffffffff);
+//        }
+
+        int lowestVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
+
+
+        if (mTimerPos >= lowestVisPos) {
+            LinearLayout currentStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
+            currentStretch.setBackgroundColor(0xffcccccc);
         }
-        LinearLayout currentStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
-        currentStretch.setBackgroundColor(0xffcccccc);
+
+        if (mTimerPos - 1 >= lowestVisPos) {
+            LinearLayout previousStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos -1);
+            previousStretch.setBackgroundColor(0xffccffcc);
+        }
+
+        // TODO: make the other visible white
 
     }
 
@@ -337,6 +356,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void initializeLoader() {
         getSupportLoaderManager().initLoader(1, null, this);
 
+    }
+
+    public int getTimerPos() {
+        return mTimerPos;
     }
 
 }

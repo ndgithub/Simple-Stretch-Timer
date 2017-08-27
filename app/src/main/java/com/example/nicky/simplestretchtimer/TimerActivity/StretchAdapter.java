@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
+import com.squareup.haha.perflib.Main;
 
 import java.util.ArrayList;
 
@@ -20,22 +21,21 @@ import java.util.ArrayList;
  * Created by Nicky on 8/18/17.
  */
 
-public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class StretchAdapter extends RecyclerView.Adapter<StretchAdapter.StretchHolder> {
     ArrayList<Stretch> mStretches;
 
-    private TextView mStretchName;
-    private TextView mStretchTime;
-    private LinearLayout mContainerView;
     private int mTimerPos;
+    private Context mContext;
+    private Activity mActivity;
 
-
-    public RecyclerAdapter(ArrayList<Stretch> stretches, int timerPos) {
+    public StretchAdapter(ArrayList<Stretch> stretches, int timerPos, Context c) {
         mStretches = stretches;
         mTimerPos = timerPos;
+        mContext = c;
     }
 
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public StretchHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View inflatedView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.recycler_list_item, parent, false);
         return new StretchHolder(inflatedView);
@@ -50,16 +50,21 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(StretchHolder holder, int position) {
+        mTimerPos = ((MainActivity) mContext).getTimerPos();
 
         Stretch stretch = mStretches.get(position);
-        mStretchName.setText(stretch.getName());
-        mStretchTime.setText(String.valueOf(stretch.getTime()));
+        holder.mStretchName.setText(stretch.getName());
+        holder.mStretchTime.setText(stretch.getTime() + " Actual Position: " + stretch.getAddedPos()
+                + "  Recycler Position: " + position);
         if (position == mTimerPos) {
-            mContainerView.setBackgroundColor(0xffccffcc);
+            holder.mContainerView.setBackgroundColor(0xffcccccc);
+        } else {
+            holder.mContainerView.setBackgroundColor(0xffccffcc);
         }
 
-        Log.v("***Adapter", "position: " + position);
+
+            Log.v("***Adapter", "position: " + position);
 
     }
 
@@ -71,6 +76,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
 
     public class StretchHolder extends RecyclerView.ViewHolder {
+
+        public TextView mStretchName;
+        public TextView mStretchTime;
+        public LinearLayout mContainerView;
 
         public StretchHolder(View view) {
             super(view);
