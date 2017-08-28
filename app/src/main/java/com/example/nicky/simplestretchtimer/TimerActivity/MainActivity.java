@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mAddButton.setOnClickListener(v -> addStretch("New Stretch: ", 5));
 
         buildNotification();
-        createRegisterBroadcastReceivers();
+
         Log.v("Act. LifeCycle", "onCreate");
 
     }
@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
-
+        createRegisterBroadcastReceivers();
         Log.v("Act. LifeCycle", "onStart");
         Log.v("Act. LifeCycle", "onStart");
 
@@ -154,7 +154,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void playTimer() {
         mPlayButton.setText("PAUSE");
         mTimerService.play();
-        // TODO:
 
     }
 
@@ -367,9 +366,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 }
 
-//////////////////////// Eventually Stuff \\\\\\\\\\\\\\\\\\\\\\\\
+//----------------------- Eventually Stuff -----------------------//
 
-//Unregister broadcast recievers
+// Change position between stretches
+// Skip to next stretch button
+// Settings to adjust break time
+// UI
+
+
+//////////////////////// keep in mind stuff \\\\\\\\\
 
 
 // the services onCreate gets called when service is first started(gets called

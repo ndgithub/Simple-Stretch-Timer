@@ -158,11 +158,12 @@ public class TimerService extends Service {
     }
 
     private void goToStretchPosition(int timerPosition) {
+        Log.v("***", mTimerPos + "    goToStretchPosition ");
         mTimerPos = timerPosition;
         mTimeElapsed = 0;
         broadcastPositionChange(mTimerPos);
 
-        Log.v("***", mTimerPos + "    goToStretchPosition ");
+
     }
 
     @Override
