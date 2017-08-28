@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -57,12 +58,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private final String IS_BOUND = "isBound";
 
     private int mTimerPos;
-    private final String CURRENT_POSITION_KEY = "position";
+    private final String NEW_POSITION_KEY = "position";
 
     private LinearLayoutManager mLinearLayoutManager;
     private StretchAdapter mAdapter;
     private ArrayList<Stretch> mStretchArray;
     private RemoteViews mRemoteView;
+    private int newPos;
 
     @BindView(R.id.test_view1)
     TextView mTextView;
@@ -121,9 +123,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 isBound = true;
                 mTimerPos = mTimerService.getTimerPos();
                 setupRecyclerView();
-                Log.v("*** - MainActivity", "Service is bound");
-                Log.v("***12", mTimerService.toString());
+                Log.v("***", "service connected");
                 mTimerService.stopForeground(true);
+                mNotificationManager.cancelAll();
 
             }
 
@@ -165,8 +167,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mPlayButton.setText("Play");
         mTimerService.reset();
         mTextView.setText(String.valueOf(mStretchArray.get(0).getTime()));
-        mTimerPos = 0;
-        highlightCurrentStretch();
+        //setCurrentStretch(0);
     }
 
     @Override
@@ -210,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mLinearLayoutManager = new LinearLayoutManager(getApplicationContext());
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
         mStretchArray = new ArrayList<>();
-        mAdapter = new StretchAdapter(mStretchArray, mTimerPos,this);
+        mAdapter = new StretchAdapter(mStretchArray, mTimerPos, this);
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setItemViewCacheSize(0);
         initializeLoader(); //initializeLoader must stay at end of this function.
@@ -223,9 +224,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mTimerService.startForeground(NOTIFICATION_ID, mBuilder.build());
             mTimerService.setForegroundState(true);
         }
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mPosChangeReceiver);
         Log.v("Act. LifeCycle", "onStop");
     }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -288,49 +289,51 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 if (mTimerService.isForeground()) {
                     mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
                     mNotificationManager.notify(1, mBuilder.build());
+                    Log.v("!!***", mTimerPos + "    Notification Revciever");
                 }
             }
         };
-
         mPosChangeReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                mTimerPos = intent.getIntExtra(TimerService.CURRENT_POSITION_KEY, 0);
+                newPos = intent.getIntExtra(TimerService.NEW_POSITION_KEY, 0);
                 if (mLinearLayoutManager.getChildCount() >= mTimerPos) {
-                    highlightCurrentStretch();
+                    Log.v("!!***", mTimerPos + "    Reciever");
+                    setCurrentStretch(newPos);
                 }
             }
         };
 
+
         LocalBroadcastManager.getInstance(this).
                 registerReceiver(mTickReceiver, new IntentFilter(TimerService.ONTICK_KEY));
-        LocalBroadcastManager.getInstance(this).
-                registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
+
+
+            LocalBroadcastManager.getInstance(this).
+                    registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
 
     }
 
-    private void highlightCurrentStretch() {
-//        for (int i = 1; i < mStretchArray.size(); i++) {
-//
-//            Log.v("***h","i: " + i);
-//            LinearLayout currentView = (LinearLayout) mRecyclerView.findViewById();
-//            currentView.setBackgroundColor(0xffffffff);
-//        }
+    private void setCurrentStretch(int newPos) {
+        int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
+        int maxVisPos = mLinearLayoutManager.findLastVisibleItemPosition();
+        Log.v("!!***", mTimerPos + "    highlightCurrentStretch()");
 
-        int lowestVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
-
-
-        if (mTimerPos >= lowestVisPos) {
-            LinearLayout currentStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
+        if (newPos >= minVisPos && newPos <= maxVisPos) {
+            Log.v("!!***", mTimerPos + "    Highlight Current");
+            LinearLayout currentStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(newPos);
             currentStretch.setBackgroundColor(0xffcccccc);
         }
 
-        if (mTimerPos - 1 >= lowestVisPos) {
-            LinearLayout previousStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos -1);
+        if (mTimerPos >= minVisPos && mTimerPos <= maxVisPos) {
+            Log.v("!!***", mTimerPos + "    Unhighlight Old");
+            LinearLayout previousStretch = (LinearLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
             previousStretch.setBackgroundColor(0xffccffcc);
         }
 
-        // TODO: make the other visible white
+        mTimerPos = newPos;
+
+// TODO: retain button text after orientatoin change
 
     }
 

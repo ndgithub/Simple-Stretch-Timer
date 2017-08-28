@@ -30,7 +30,7 @@ public class TimerService extends Service {
     static final public String MILS_UNTIL_FINISHED_KEY = "milsRemaining";
 
     static final public String POSITION_CHANGED_KEY = "com.example.nicky.timerpractice.timerservice.POSITIONUPDATE";
-    static final public String CURRENT_POSITION_KEY = "position";
+    static final public String NEW_POSITION_KEY = "position";
 
 
     private boolean mRunning;
@@ -161,7 +161,8 @@ public class TimerService extends Service {
         mTimerPos = timerPosition;
         mTimeElapsed = 0;
         broadcastPositionChange(mTimerPos);
-        Log.v("***", "TimerPos: " + mTimerPos);
+
+        Log.v("***", mTimerPos + "    goToStretchPosition ");
     }
 
     @Override
@@ -180,8 +181,9 @@ public class TimerService extends Service {
 
     private void broadcastPositionChange(int newPosition) {
         Intent posIntent = new Intent(POSITION_CHANGED_KEY);
-        posIntent.putExtra(CURRENT_POSITION_KEY, newPosition);
+        posIntent.putExtra(NEW_POSITION_KEY, newPosition);
         localBroadcaster.sendBroadcast(posIntent);
+        Log.v("!!***", newPosition + "    Broadcast (Position Change)");
     }
 
 
