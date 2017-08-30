@@ -32,10 +32,8 @@ public class TimerService extends Service {
     static final public String POSITION_CHANGED_KEY = "com.example.nicky.timerpractice.timerservice.POSITIONUPDATE";
     static final public String NEW_POSITION_KEY = "position";
 
-
-    private boolean mRunning;
+    private boolean mTicking;
     private boolean mForeground;
-
 
     static ArrayList<Integer> timesArray;
     public int mTimerPos;
@@ -45,8 +43,8 @@ public class TimerService extends Service {
     MyCountdownTimer countDownTimer;
     private final int TICK_INTERVAL = 1000;
 
-    public boolean isRunning() {
-        return mRunning;
+    public boolean isTicking() {
+        return mTicking;
     }
 
     public boolean isForeground() {
@@ -90,19 +88,18 @@ public class TimerService extends Service {
 
     public void pause() {
         mTimeElapsed = (SystemClock.elapsedRealtime() - mStartingTime) + mTimeElapsed;
-        stopRunning();
+        stopTicking();
     }
 
     public void reset() {
-        if (mRunning) {
-            stopRunning();
+        if (mTicking) {
+            stopTicking();
         }
         goToStretchPosition(0);
     }
 
 
     private void startTimer(long countdownTime) {
-        final int TICK_INTERVAL = 1000;
         long leftover = countdownTime % TICK_INTERVAL;
         mStartingTime = SystemClock.elapsedRealtime();
         countDownTimer = new MyCountdownTimer(countdownTime - leftover, TICK_INTERVAL) {
@@ -118,19 +115,14 @@ public class TimerService extends Service {
             }
         };
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                countDownTimer.start();
-            }
-        }, leftover);
-        mRunning = true;
+        handler.postDelayed(() -> countDownTimer.start(),leftover);
+        mTicking = true;
     }
 
 
-    private void stopRunning() {
+    private void stopTicking() {
         countDownTimer.cancel();
-        mRunning = false;
+        mTicking = false;
 
     }
 
@@ -141,8 +133,7 @@ public class TimerService extends Service {
     private void timerFinished() {
 
         if (isStretchesRemaining()) {
-            Timber.v("Timer Position: " + mTimerPos);
-            goToStretchPosition(mTimerPos + 1);
+            goToNextStretch();
             startTimer(returnCountdownTime());
             Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
         } else {
@@ -151,6 +142,10 @@ public class TimerService extends Service {
             stopSelf();
 
         }
+    }
+
+    private void goToNextStretch() {
+        goToStretchPosition(mTimerPos + 1);
     }
 
     private boolean isStretchesRemaining() {
@@ -171,13 +166,13 @@ public class TimerService extends Service {
         super.onDestroy();
         Log.v("*** - Service ", "onDestroy");
         Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
-
     }
 
     private void broadcastTick(long milsUntilFinished) {
         Intent tickIntent = new Intent(ONTICK_KEY);
         tickIntent.putExtra(MILS_UNTIL_FINISHED_KEY, Math.ceil(milsUntilFinished / 1000.));
         localBroadcaster.sendBroadcast(tickIntent);
+
     }
 
     private void broadcastPositionChange(int newPosition) {

@@ -128,4 +128,8 @@ public abstract class MyCountdownTimer {
             }
         }
     };
+
+    public boolean isTicking() {
+        return mCancelled;
+    }
 }

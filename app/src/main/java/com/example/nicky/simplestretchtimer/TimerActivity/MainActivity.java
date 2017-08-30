@@ -1,5 +1,6 @@
 package com.example.nicky.simplestretchtimer.TimerActivity;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -47,18 +48,23 @@ import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    NotificationManager mNotificationManager;
     NotificationCompat.Builder mBuilder;
     private final int NOTIFICATION_ID = 1;
 
-    private BroadcastReceiver mTickReceiver;
+    private BroadcastReceiver mActivityTickReceiver;
+    private BroadcastReceiver mNotificationTickReciever;
     private BroadcastReceiver mPosChangeReceiver;
     private TimerService mTimerService;
+    ServiceConnection serviceConnection;
+
+
+    private final String TIMER_TEXT_KEY = "Timer Text Key";
+
+    private NotificationManager mNotificationManager;
     boolean isBound;
     private final String IS_BOUND = "isBound";
 
     private int mTimerPos;
-    private final String NEW_POSITION_KEY = "position";
 
     private LinearLayoutManager mLinearLayoutManager;
     private StretchAdapter mAdapter;
@@ -66,10 +72,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RemoteViews mRemoteView;
     private int newPos;
 
+    private LocalBroadcastManager mLocalBroadcastManager;
+
     @BindView(R.id.test_view1)
-    TextView mTextView;
+    TextView mDisplayText;
     @BindView(R.id.button_play_pause)
-    Button mPlayButton;
+    Button mPlayPauseButton;
     @BindView(R.id.button_reset)
     Button mResetButton;
     @BindView(R.id.recycler_view)
@@ -77,35 +85,39 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @BindView(R.id.add_button)
     Button mAddButton;
 
-    @OnClick(R.id.button_play_pause)
-    public void playButton() {
-        if (!mTimerService.isRunning()) {
-            playTimer();
-        } else {
-            pauseTimer();
-        }
-    }
-
-
-    @OnClick(R.id.button_reset)
-    public void resetButton() {
-        reset();
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v("***", "onCreate");
+        Log.v("Act. LifeCycle", "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        if (savedInstanceState != null) {
+            mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
+        }
+
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
+
+        mPlayPauseButton.setOnClickListener(v -> onPlayPauseClick());
         mAddButton.setOnClickListener(v -> addStretch("New Stretch: ", 5));
+        mResetButton.setOnClickListener(v -> reset());
 
-        buildNotification();
-
-        Log.v("Act. LifeCycle", "onCreate");
+        setupRecyclerView();
+        initializeLoader();
+        mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mPosChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                newPos = intent.getIntExtra(TimerService.NEW_POSITION_KEY, 0);
+                if (mLinearLayoutManager.getChildCount() >= mTimerPos) {
+                    Log.v("!!***", mTimerPos + " Position ChangeReciever");
+                    setCurrentStretch(newPos);
+                }
+            }
+        };
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
+        mLocalBroadcastManager.registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
 
     }
 
@@ -113,19 +125,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onStart() {
         super.onStart();
+        mLocalBroadcastManager.unregisterReceiver(mNotificationTickReciever);
+
         mNotificationManager.cancelAll();
 
-        ServiceConnection serviceConnection = new ServiceConnection() {
+
+        serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 TimerService.TimerBinder timerBinder = (TimerService.TimerBinder) service;
                 mTimerService = timerBinder.getService();
                 isBound = true;
                 mTimerPos = mTimerService.getTimerPos();
-                setupRecyclerView();
                 Log.v("***", "service connected");
-                mTimerService.stopForeground(true);
+
                 mNotificationManager.cancelAll();
+                mTimerService.updateStretches(mStretchArray);
+                mTimerService.stopForeground(true);
 
             }
 
@@ -138,9 +154,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
-        createRegisterBroadcastReceivers();
+
+        mActivityTickReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
+                mDisplayText.setText(secsRemaining + " ");
+            }
+        };
+        mLocalBroadcastManager.registerReceiver(mActivityTickReceiver, new IntentFilter(TimerService.ONTICK_KEY));
+
+
         Log.v("Act. LifeCycle", "onStart");
-        Log.v("Act. LifeCycle", "onStart");
+
+// TODO: let service know when foreground or not.
 
     }
 
@@ -150,23 +177,63 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         Log.v("Act. LifeCycle", "onResume");
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mActivityTickReceiver);
 
-    public void playTimer() {
-        mPlayButton.setText("PAUSE");
-        mTimerService.play();
 
+        if (mTimerService != null && mTimerService.isTicking()) {
+            Intent resultIntent = new Intent(this, MainActivity.class);
+            PendingIntent pendingIntent =
+                    PendingIntent.getActivity(this, 0, resultIntent, 0);
+            Notification notification =
+                    new NotificationCompat.Builder(this)
+                            .setSmallIcon(R.drawable.ic_grade_black_18dp)
+                            .setContent(mRemoteView)
+                            .setContentIntent(pendingIntent).build();
+
+            mTimerService.startForeground(NOTIFICATION_ID, notification);
+            mTimerService.setForegroundState(true);
+            mNotificationTickReciever = new BroadcastReceiver() {
+
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (mTimerService.isForeground()) {
+                        double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
+                        mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
+                        mNotificationManager.notify(1, notification);
+                        Log.v("!!***", mTimerPos + "    Notification Revciever");
+                    }
+                }
+            };
+            LocalBroadcastManager.getInstance(this).
+                    registerReceiver(mNotificationTickReciever, new IntentFilter(TimerService.ONTICK_KEY));
+        } else {
+            mTimerService.stopSelf();
+            unbindService(serviceConnection);
+            Log.v("!***", "unbind service");
+        }
+
+
+        Log.v("Act. LifeCycle", "onStop");
     }
 
-    public void pauseTimer() {
-        mPlayButton.setText("Play");
-        mTimerService.pause();
+    // TODO: if foregrounded, notification should not disappear when time up.  
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.v("Act. LifeCycle", "onDestroy");
+        mLocalBroadcastManager.unregisterReceiver(mPosChangeReceiver);
     }
 
-    public void reset() {
-        mPlayButton.setText("Play");
-        mTimerService.reset();
-        mTextView.setText(String.valueOf(mStretchArray.get(0).getTime()));
-        //setCurrentStretch(0);
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(IS_BOUND, isBound);
+        outState.putString("Play Button Text", mPlayPauseButton.getText().toString());
+        outState.putString(TIMER_TEXT_KEY, mDisplayText.getText().toString());
     }
 
     @Override
@@ -198,10 +265,29 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean(IS_BOUND, isBound);
+    private void onPlayPauseClick() {
+        if (!mTimerService.isTicking()) {
+            playTimer();
+        } else {
+            pauseTimer();
+        }
+    }
+
+    public void playTimer() {
+        mPlayPauseButton.setText("PAUSE");
+        mTimerService.play();
+
+    }
+
+    public void pauseTimer() {
+        mPlayPauseButton.setText("Play");
+        mTimerService.pause();
+    }
+
+    public void reset() {
+        mPlayPauseButton.setText("Play");
+        mTimerService.reset();
+        mDisplayText.setText(String.valueOf(mStretchArray.get(0).getTime()));
     }
 
 
@@ -213,25 +299,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mAdapter = new StretchAdapter(mStretchArray, mTimerPos, this);
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setItemViewCacheSize(0);
-        initializeLoader(); //initializeLoader must stay at end of this function.
+        //initializeLoader must stay at end of this function.
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mTimerService.isRunning()) {
-            mTimerService.startForeground(NOTIFICATION_ID, mBuilder.build());
-            mTimerService.setForegroundState(true);
-        }
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mPosChangeReceiver);
-        Log.v("Act. LifeCycle", "onStop");
-    }
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.v("Act. LifeCycle", "onDestroy");
-
-    }
 
     public void addStretch(String name, int time) {
         // TODO: scroll to bottom of recycyler view
@@ -239,13 +309,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         cv.put(StretchDbContract.Stretches.NAME, name);
         cv.put(StretchDbContract.Stretches.TIME, time);
         getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
-
-
     }
 
 
-//////////////////////// Cursor Loader Stuff \\\\\\\\\\\\\\\\\\\\\\\\
-
+    //----------------------- CursorLoader Stuff -----------------------//
     @Override
     public Loader onCreateLoader(int id, Bundle args) {
         Log.v("**Loader", "onCreateLoader");
@@ -268,7 +335,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mAdapter.notifyDataSetChanged();
         Log.v("*****Loader", "onLoadFinished");
-        mTimerService.updateStretches(mStretchArray);
+        if (mTimerService != null) {
+            mTimerService.updateStretches(mStretchArray);
+        }
     }
 
     @Override
@@ -277,41 +346,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         Log.v("******", "onLoaderReset");
     }
 
-
-    private void createRegisterBroadcastReceivers() {
-        mTickReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                mTextView.setText(secsRemaining + " ");
-
-                if (mTimerService.isForeground()) {
-                    mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
-                    mNotificationManager.notify(1, mBuilder.build());
-                    Log.v("!!***", mTimerPos + "    Notification Revciever");
-                }
-            }
-        };
-        mPosChangeReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                newPos = intent.getIntExtra(TimerService.NEW_POSITION_KEY, 0);
-                if (mLinearLayoutManager.getChildCount() >= mTimerPos) {
-                    Log.v("!!***", mTimerPos + "    Reciever");
-                    setCurrentStretch(newPos);
-                }
-            }
-        };
-
-
-        LocalBroadcastManager.getInstance(this).
-                registerReceiver(mTickReceiver, new IntentFilter(TimerService.ONTICK_KEY));
-
-
-            LocalBroadcastManager.getInstance(this).
-                    registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
-
-    }
 
     private void setCurrentStretch(int newPos) {
         int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
@@ -335,25 +369,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 // TODO: retain button text after orientatoin change
 
     }
-
-    private void buildNotification() {
-        mBuilder =
-                new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_grade_black_18dp)
-                        .setContent(mRemoteView);
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent =
-                stackBuilder.getPendingIntent(
-                        0,
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                );
-        mBuilder.setContentIntent(resultPendingIntent);
-        mNotificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    }
+//
+//    private void buildNotification() {
+//
+//
+////        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+////        stackBuilder.addParentStack(MainActivity.class);
+////        stackBuilder.addNextIntent(resultIntent);
+////        PendingIntent resultPendingIntent =
+////                stackBuilder.getPendingIntent(
+////                        0,
+////                        PendingIntent.FLAG_UPDATE_CURRENT
+////                );
+////        mBuilder.setContentIntent(resultPendingIntent);
+//        //mNotificationManager =
+//                //(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//    }
 
     public void initializeLoader() {
         getSupportLoaderManager().initLoader(1, null, this);
@@ -369,13 +400,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 //----------------------- Eventually Stuff -----------------------//
 
 // Change position between stretches
-// Skip to next stretch button
-// Settings to adjust break time
+// Skip to next stretch button  -NO
+// Settings to adjust break
+// Save text onSaveInstance
+//Maintain scroll position on orientation change.
 // UI
+// Notifications when foregrounded
+// Sounds
 
 
-//////////////////////// keep in mind stuff \\\\\\\\\
-
+//----------------------- Keep in Mind Stuff -----------------------//
 
 // the services onCreate gets called when service is first started(gets called
 // before onStartCommand). If service is already running, it does not get called.
