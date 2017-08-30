@@ -133,13 +133,14 @@ public class TimerService extends Service {
     private void timerFinished() {
 
         if (isStretchesRemaining()) {
+            // TODO:  
             goToNextStretch();
             startTimer(returnCountdownTime());
             Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
         } else {
             reset();
             Toast.makeText(getApplicationContext(), "Ding, Ding Ding!!!", Toast.LENGTH_SHORT).show();
-            stopSelf();
+            //stopSelf();
 
         }
     }

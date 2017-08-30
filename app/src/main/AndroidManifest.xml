@@ -13,7 +13,8 @@
         <provider
             android:authorities="com.example.nicky.simplestretchtimer.stretches"
             android:name=".data.StretchProvider" />
-        <service android:name=".TimerActivity.TimerService" />
+        <service android:name=".TimerActivity.TimerService"
+            />
         <activity
             android:name=".TimerActivity.MainActivity">
             <intent-filter>

@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private final String TIMER_TEXT_KEY = "Timer Text Key";
+    private final String TIMER_POS_KEY = "Timer Position Key";
 
     private NotificationManager mNotificationManager;
     boolean isBound;
@@ -94,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if (savedInstanceState != null) {
             mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
+            mTimerPos = savedInstanceState.getInt(TIMER_POS_KEY);
         }
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
@@ -125,7 +127,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onStart() {
         super.onStart();
-        mLocalBroadcastManager.unregisterReceiver(mNotificationTickReciever);
 
         mNotificationManager.cancelAll();
 
@@ -174,6 +175,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onResume() {
         super.onResume();
+        mLocalBroadcastManager.unregisterReceiver(mNotificationTickReciever);
+
         Log.v("Act. LifeCycle", "onResume");
     }
 
@@ -184,31 +187,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
         if (mTimerService != null && mTimerService.isTicking()) {
-            Intent resultIntent = new Intent(this, MainActivity.class);
-            PendingIntent pendingIntent =
-                    PendingIntent.getActivity(this, 0, resultIntent, 0);
-            Notification notification =
-                    new NotificationCompat.Builder(this)
-                            .setSmallIcon(R.drawable.ic_grade_black_18dp)
-                            .setContent(mRemoteView)
-                            .setContentIntent(pendingIntent).build();
-
-            mTimerService.startForeground(NOTIFICATION_ID, notification);
-            mTimerService.setForegroundState(true);
-            mNotificationTickReciever = new BroadcastReceiver() {
-
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if (mTimerService.isForeground()) {
-                        double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                        mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
-                        mNotificationManager.notify(1, notification);
-                        Log.v("!!***", mTimerPos + "    Notification Revciever");
-                    }
-                }
-            };
-            LocalBroadcastManager.getInstance(this).
-                    registerReceiver(mNotificationTickReciever, new IntentFilter(TimerService.ONTICK_KEY));
+          registerNotifReciever();
         } else {
             mTimerService.stopSelf();
             unbindService(serviceConnection);
@@ -231,9 +210,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBoolean(IS_BOUND, isBound);
+        //outState.putBoolean(IS_BOUND, isBound);
         outState.putString("Play Button Text", mPlayPauseButton.getText().toString());
         outState.putString(TIMER_TEXT_KEY, mDisplayText.getText().toString());
+        outState.putInt(TIMER_POS_KEY,mTimerPos);
     }
 
     @Override
@@ -395,6 +375,30 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return mTimerPos;
     }
 
+
+    private void registerNotifReciever() {  Intent resultIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
+        Notification notification = new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.ic_grade_black_18dp)
+                        .setContent(mRemoteView)
+                        .setContentIntent(pendingIntent).build();
+
+        mTimerService.startForeground(NOTIFICATION_ID, notification);
+        mTimerService.setForegroundState(true);
+        mNotificationTickReciever = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (mTimerService.isForeground()) {
+                    double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
+                    mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
+                    mNotificationManager.notify(1, notification);
+                    Log.v("!!***", mTimerPos + "    Notification Revciever");
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).
+                registerReceiver(mNotificationTickReciever, new IntentFilter(TimerService.ONTICK_KEY));}
 }
 
 //----------------------- Eventually Stuff -----------------------//
@@ -402,7 +406,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 // Change position between stretches
 // Skip to next stretch button  -NO
 // Settings to adjust break
-// Save text onSaveInstance
 //Maintain scroll position on orientation change.
 // UI
 // Notifications when foregrounded
