@@ -45,7 +45,6 @@ public final class StretchDbContract {
         public static final String _ID = "_id";
         public static final String NAME = "stretch_name";
         public static final String TIME = "seconds";
-        public static final String POSITION = "position";
     }
 
 }

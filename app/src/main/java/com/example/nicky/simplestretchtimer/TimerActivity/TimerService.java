@@ -2,6 +2,7 @@ package com.example.nicky.simplestretchtimer.TimerActivity;
 
 import android.app.Service;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
@@ -11,6 +12,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 
 import java.util.ArrayList;
@@ -31,6 +33,9 @@ public class TimerService extends Service {
 
     static final public String POSITION_CHANGED_KEY = "com.example.nicky.timerpractice.timerservice.POSITIONUPDATE";
     static final public String NEW_POSITION_KEY = "position";
+
+    static final public String STRETCHES_COMPLETE_KEY = "com.example.nicky.timerpractice.timerservice.STRETCHESCOMPLETE";
+
 
     private boolean mTicking;
     private boolean mForeground;
@@ -55,12 +60,41 @@ public class TimerService extends Service {
         mForeground = foreground;
     }
 
+
+    private MediaPlayer mMediaPlayerDing;
+    private MediaPlayer mMediaPlayerDingFinish;
+
+    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
+        @Override
+        public void onCompletion(MediaPlayer mediaPlayer) {
+            // Now that the sound file has finished playing, release the media player resources.
+            releaseMediaPlayer();
+        }
+    };
+
+    private void releaseMediaPlayer() {
+        // If the media player is not null, then it may be currently playing a sound.
+        if (mMediaPlayerDing != null) {
+            // Regardless of the current state of the media player, release its resources
+            // because we no longer need it.
+            mMediaPlayerDing.release();
+
+            // Set the media player back to null. For our code, we've decided that
+            // setting the media player to null is an easy way to tell that the media player
+            // is not configured to play an audio file at the moment.
+            mMediaPlayerDing = null;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         Log.v("*** - Service ", "onCreate");
         localBroadcaster = LocalBroadcastManager.getInstance(this);
         mTimerPos = 0;
+
+        mMediaPlayerDing = MediaPlayer.create(getApplicationContext(), R.raw.bell);
+        mMediaPlayerDingFinish = MediaPlayer.create(getApplicationContext(),R.raw.ding_finish);
     }
 
     @Override
@@ -115,7 +149,7 @@ public class TimerService extends Service {
             }
         };
         Handler handler = new Handler();
-        handler.postDelayed(() -> countDownTimer.start(),leftover);
+        handler.postDelayed(() -> countDownTimer.start(), leftover);
         mTicking = true;
     }
 
@@ -127,20 +161,27 @@ public class TimerService extends Service {
     }
 
     private long returnCountdownTime() {
-      return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
+        return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
     }
 
     private void timerFinished() {
 
         if (isStretchesRemaining()) {
-            // TODO:  
             goToNextStretch();
             startTimer(returnCountdownTime());
             Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
+            if (mTimerPos % 2 == 1) {
+                mMediaPlayerDing.start();
+            }
+
         } else {
             reset();
-            Toast.makeText(getApplicationContext(), "Ding, Ding Ding!!!", Toast.LENGTH_SHORT).show();
-            //stopSelf();
+            mMediaPlayerDingFinish.start();
+            broadcastAllStretchesComplete();
+            if (isForeground()) {
+                // TODO:  headsup notification
+            }
+
 
         }
     }
@@ -167,7 +208,10 @@ public class TimerService extends Service {
         super.onDestroy();
         Log.v("*** - Service ", "onDestroy");
         Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
+        releaseMediaPlayer();
     }
+
+
 
     private void broadcastTick(long milsUntilFinished) {
         Intent tickIntent = new Intent(ONTICK_KEY);
@@ -181,6 +225,12 @@ public class TimerService extends Service {
         posIntent.putExtra(NEW_POSITION_KEY, newPosition);
         localBroadcaster.sendBroadcast(posIntent);
         Log.v("!!***", newPosition + "    Broadcast (Position Change)");
+    }
+
+    private void broadcastAllStretchesComplete() {
+        Intent intent = new Intent(STRETCHES_COMPLETE_KEY);
+        localBroadcaster.sendBroadcast(intent);
+
     }
 
 

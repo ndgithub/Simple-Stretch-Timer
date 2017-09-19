@@ -104,7 +104,10 @@ public class StretchProvider extends ContentProvider {
             case STRETCHES_ID:
                 selection = StretchDbContract.Stretches._ID + "=?";
                 selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
-                return database.delete(StretchDbContract.Stretches.TABLE_NAME, selection, selectionArgs);
+                int number = database.delete(StretchDbContract.Stretches.TABLE_NAME, selection, selectionArgs);
+
+            getContext().getContentResolver().notifyChange(uri, null);
+                return number;
             default:
                 throw new IllegalArgumentException("Deletion is not supported for " + uri);
         }

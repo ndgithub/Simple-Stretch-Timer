@@ -26,16 +26,14 @@ public class StretchDbHelper extends SQLiteOpenHelper {
         String CREATE_TABLE_QUERY = "CREATE TABLE " + StretchDbContract.Stretches.TABLE_NAME + "(" +
                 StretchDbContract.Stretches._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                 StretchDbContract.Stretches.NAME + " TEXT," +
-                StretchDbContract.Stretches.TIME + " INT NOT NULL," +
-                StretchDbContract.Stretches.POSITION + " INT NOT NULL DEFAULT 0)";
+                StretchDbContract.Stretches.TIME + " INT NOT NULL)";
 
 
         String CREATE_FIRST_ENTRY_STATEMENT = "INSERT INTO " +
                 StretchDbContract.Stretches.TABLE_NAME + " (" +
                 StretchDbContract.Stretches.NAME + "," +
-                StretchDbContract.Stretches.TIME + "," +
-                StretchDbContract.Stretches.POSITION +
-                ") VALUES ('First Stretch',5,0)";
+                StretchDbContract.Stretches.TIME +
+                ") VALUES ('First Stretch',5)";
 
         Timber.v(CREATE_TABLE_QUERY);
         Timber.v(CREATE_FIRST_ENTRY_STATEMENT);

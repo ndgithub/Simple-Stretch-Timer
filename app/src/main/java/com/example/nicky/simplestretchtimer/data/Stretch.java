@@ -9,12 +9,12 @@ import android.support.annotation.Nullable;
 public class Stretch {
     private String mName;
     private int mTime;
-    private String mAddedPos;
+    private int mId;
 
-    public Stretch(@Nullable String name, int time, String addedPos) {
+    public Stretch(@Nullable String name, int time, int addedPos) {
         this.mName = name;
         this.mTime = time;
-        this.mAddedPos = addedPos;
+        this.mId = addedPos;
     }
 
     public String getName() {
@@ -33,8 +33,8 @@ public class Stretch {
         this.mTime = time;
     }
 
-    public String getAddedPos() {
-        return mAddedPos;
+    public int getId() {
+        return mId;
     }
 
 }
