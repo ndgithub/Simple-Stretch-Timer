@@ -94,7 +94,7 @@ public class TimerService extends Service {
         mTimerPos = 0;
 
         mMediaPlayerDing = MediaPlayer.create(getApplicationContext(), R.raw.bell);
-        mMediaPlayerDingFinish = MediaPlayer.create(getApplicationContext(),R.raw.ding_finish);
+        mMediaPlayerDingFinish = MediaPlayer.create(getApplicationContext(), R.raw.ding_finish);
     }
 
     @Override
@@ -116,7 +116,6 @@ public class TimerService extends Service {
 
     public void play() {
         startTimer(returnCountdownTime());
-        Log.v("***", "PLAY");
     }
 
 
@@ -133,7 +132,7 @@ public class TimerService extends Service {
     }
 
 
-    private void startTimer(long countdownTime) {
+    public void startTimer(long countdownTime) {
         long leftover = countdownTime % TICK_INTERVAL;
         mStartingTime = SystemClock.elapsedRealtime();
         countDownTimer = new MyCountdownTimer(countdownTime - leftover, TICK_INTERVAL) {
@@ -145,7 +144,7 @@ public class TimerService extends Service {
 
             @Override
             public void onFinish() {
-                timerFinished();
+                timerFinished(1);
             }
         };
         Handler handler = new Handler();
@@ -154,20 +153,25 @@ public class TimerService extends Service {
     }
 
 
-    private void stopTicking() {
+    public void stopTicking() {
         countDownTimer.cancel();
         mTicking = false;
 
     }
 
     private long returnCountdownTime() {
-        return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
+
+            return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
+
     }
 
-    private void timerFinished() {
+
+
+
+    public void timerFinished(int advNum) {
 
         if (isStretchesRemaining()) {
-            goToNextStretch();
+            goToStretchPosition(mTimerPos + advNum);
             startTimer(returnCountdownTime());
             Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
             if (mTimerPos % 2 == 1) {
@@ -182,9 +186,10 @@ public class TimerService extends Service {
                 // TODO:  headsup notification
             }
 
-
         }
     }
+
+
 
     private void goToNextStretch() {
         goToStretchPosition(mTimerPos + 1);
@@ -210,7 +215,6 @@ public class TimerService extends Service {
         Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
         releaseMediaPlayer();
     }
-
 
 
     private void broadcastTick(long milsUntilFinished) {
@@ -247,12 +251,19 @@ public class TimerService extends Service {
         for (Stretch stretch : stretches) {
             timesArray.add(stretch.getTime());
         }
+        Log.v("Array***2", "timesArray: " + timesArray.toString());
+
     }
 
     public int getTimerPos() {
         return mTimerPos;
     }
 
+    public void adjustTimerPos(int adj) {
+        Log.v("***", "Old mTimerPos: " + mTimerPos);
+        this.mTimerPos = mTimerPos + adj;
+        Log.v("***", "New mTimerPos: " + mTimerPos);
+    }
 
 }
 

@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.LoaderManager;
@@ -18,18 +19,17 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.DragAndDropPermissions;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewTreeObserver;
-import android.widget.LinearLayout;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -72,25 +72,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ArrayList<Stretch> mStretchArray;
     private RemoteViews mRemoteView;
     private int newPos;
+    private int mCurrentStretchSecsRemaining;
+    private int mSumOfStretchTime;
 
     private LocalBroadcastManager mLocalBroadcastManager;
 
-    @BindView(R.id.test_view1)
+    @BindView(R.id.display_time)
     TextView mDisplayText;
     @BindView(R.id.button_play_pause)
-    TextView mPlayPauseButton;
+    ImageView mPlayPauseButton;
     @BindView(R.id.button_reset)
-    TextView mResetButton;
+    ImageView mResetButton;
     @BindView(R.id.recycler_view)
     RecyclerView mRecyclerView;
-    @BindView(R.id.add_text)
-    TextView mAddButton;
+    @BindView(R.id.add_button)
+    ImageView mAddButton;
     @BindView(R.id.display_container)
     CardView mDisplayContainer;
+    @BindView(R.id.timer_controls)
+    CardView mTimerControls;
+    @BindView(R.id.stretch_count_value)
+    TextView mStretchCountValue;
+    @BindView(R.id.total_time_value)
+    TextView mTotalTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v("Act. LifeCycle", "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
         ButterKnife.bind(this);
@@ -100,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onGlobalLayout() {
                 mDisplayContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 mDisplayContainer.getWidth();
+               // mTimerControls.setMinimumHeight((int) Math.ceil(mDisplayContainer.getHeight() * Math.pow(.618,3)));
                 Log.v("***w", "width: " + mDisplayContainer.getMeasuredWidth());
             }
         });
@@ -126,21 +134,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onReceive(Context context, Intent intent) {
                 newPos = intent.getIntExtra(TimerService.NEW_POSITION_KEY, 0);
-//                if (mLinearLayoutManager.getChildCount() >= mTimerPos) {
-//                    Log.v("!!***", mTimerPos + " Position ChangeReciever");
-                setCurrentStretch(newPos);
-                //}
+                newCurrentStretch(newPos);
+                newSumOfStretchTime();
+                updateTotalTimeRemaining();
             }
         };
-        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
-        mLocalBroadcastManager.registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
 
         mAllStretchesCompleteReciever = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-
+                Log.v("***", "adfcaca");
+                mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow_black_48dp);
             }
         };
+
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
+        mLocalBroadcastManager.registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
+        mLocalBroadcastManager.registerReceiver(mAllStretchesCompleteReciever, new IntentFilter(TimerService.STRETCHES_COMPLETE_KEY));
 
 
     }
@@ -189,89 +199,88 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 } else {
                     mDisplayText.setText(secsRemaining / 60 + ":0" + secsRemaining % 60);
                 }
+                mCurrentStretchSecsRemaining=secsRemaining;
+                updateTotalTimeRemaining();
+
+
             }
         };
 
+        mLocalBroadcastManager.registerReceiver(mActivityTickReceiver, new IntentFilter(TimerService.ONTICK_KEY));
+    }
 
-        mLocalBroadcastManager.registerReceiver(mActivityTickReceiver,new
+    private void updateTotalTimeRemaining() {
+        mTotalTime.setText(mSumOfStretchTime + mCurrentStretchSecsRemaining + "");
+    }
 
-            IntentFilter(TimerService.ONTICK_KEY));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mLocalBroadcastManager.unregisterReceiver(mNotificationTickReciever);
 
-        Log.v("Act. LifeCycle","onStart");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mActivityTickReceiver);
+
+
+        if (mTimerService != null && mTimerService.isTicking()) {
+            registerNotificationReciever();
+            mTimerService.setForegroundState(true);
+        } else {
+            mTimerService.stopSelf();
+            unbindService(serviceConnection);
         }
+    }
 
-        @Override
-        protected void onResume () {
-            super.onResume();
-            mLocalBroadcastManager.unregisterReceiver(mNotificationTickReciever);
+    // TODO: if foregrounded, notification should not disappear when time up.
 
-            Log.v("Act. LifeCycle", "onResume");
-        }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.v("Act. LifeCycle", "onDestroy");
+        mLocalBroadcastManager.unregisterReceiver(mPosChangeReceiver);
+        mLocalBroadcastManager.unregisterReceiver(mAllStretchesCompleteReciever);
+    }
 
-        @Override
-        protected void onStop () {
-            super.onStop();
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(mActivityTickReceiver);
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //outState.putBoolean(IS_BOUND, isBound);
+        outState.putBoolean("isRunning", mTimerService.isTicking());
+        outState.putString(TIMER_TEXT_KEY, mDisplayText.getText().toString());
+        outState.putInt(TIMER_POS_KEY, mTimerPos);
+    }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
 
-            if (mTimerService != null && mTimerService.isTicking()) {
-                registerNotifReciever();
-                mTimerService.setForegroundState(true);
-            } else {
-                mTimerService.stopSelf();
-                unbindService(serviceConnection);
-                Log.v("!***", "unbind service");
-            }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
 
-
-            Log.v("Act. LifeCycle", "onStop");
-        }
-
-        // TODO: if foregrounded, notification should not disappear when time up.
-
-        @Override
-        protected void onDestroy () {
-            super.onDestroy();
-            Log.v("Act. LifeCycle", "onDestroy");
-            mLocalBroadcastManager.unregisterReceiver(mPosChangeReceiver);
-        }
-
-        @Override
-        protected void onSaveInstanceState (Bundle outState){
-            super.onSaveInstanceState(outState);
-            //outState.putBoolean(IS_BOUND, isBound);
-            outState.putString("Play Button Text", mPlayPauseButton.getText().toString());
-            outState.putString(TIMER_TEXT_KEY, mDisplayText.getText().toString());
-            outState.putInt(TIMER_POS_KEY, mTimerPos);
-        }
-
-        @Override
-        public boolean onCreateOptionsMenu (Menu menu){
-            // Inflate the menu; this adds items to the action bar if it is present.
-            getMenuInflater().inflate(R.menu.menu_main, menu);
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
             return true;
         }
 
-        @Override
-        public boolean onOptionsItemSelected (MenuItem item){
-            // Handle action bar item clicks here. The action bar will
-            // automatically handle clicks on the Home/Up button, so long
-            // as you specify a parent activity in AndroidManifest.xml.
-            int id = item.getItemId();
-
-            //noinspection SimplifiableIfStatement
-            if (id == R.id.action_settings) {
-                return true;
-            }
-
-            if (id == R.id.add_entry) {
-                addStretch("asdf", 5);
-                return true;
-            }
-
-            return super.onOptionsItemSelected(item);
-
+        if (id == R.id.add_entry) {
+            addStretch("asdf", 5);
+            return true;
         }
+
+        return super.onOptionsItemSelected(item);
+
+    }
 
 
     private void onPlayPauseClick() {
@@ -283,20 +292,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     public void playTimer() {
-        mPlayPauseButton.setText("PAUSE");
-        mTimerService.play();
+        if (mStretchArray.isEmpty()) {
+            notifyUserOfNoStretches();
+        } else {
+            mPlayPauseButton.setImageResource(R.drawable.ic_pause_black_48dp);
+            mTimerService.play();
+        }
 
     }
 
+    private void notifyUserOfNoStretches() {
+        Toast.makeText(this, "Add A Stretch First", Toast.LENGTH_SHORT).show();
+    }
+
     public void pauseTimer() {
-        mPlayPauseButton.setText("Play");
+        mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow_black_48dp);
         mTimerService.pause();
     }
 
     public void reset() {
-        mPlayPauseButton.setText("Play");
+        mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow_black_48dp);
         mTimerService.reset();
-        mDisplayText.setText(String.valueOf(mStretchArray.get(0).getTime()));
+        if (mStretchArray.size() == 0) {
+            mDisplayText.setText("-");
+        } else {
+            mDisplayText.setText(String.valueOf(mStretchArray.get(0).getTime()));
+        }
     }
 
 
@@ -320,8 +341,35 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
     }
 
+    public void onDeleteStretch(int deletedPosition) {
+        if (deletedPosition == mTimerPos) {
+            if (mTimerService.isTicking()) {
+                mTimerService.stopTicking();
+            }
+            Handler handler = new Handler();
+            if (mTimerPos < mStretchArray.size() - 1) { //If its not the last stretch
+                handler.postDelayed(() -> mTimerService.play(), 200);
+                newCurrentStretch(mTimerPos);
+            } else if (mTimerPos == mStretchArray.size() - 1) { // It it IS the last stretch
+                mTimerService.timerFinished(1);
+                mTimerPos--;
+
+            }
+        } else if (deletedPosition < mTimerPos) {
+            newCurrentStretch(mTimerPos - 2);
+            mTimerService.adjustTimerPos(-2);
+        }
+
+    }
+
 
     //----------------------- CursorLoader Stuff -----------------------//
+
+    public void initializeLoader() {
+        getSupportLoaderManager().initLoader(1, null, this);
+
+    }
+
     @Override
     public Loader onCreateLoader(int id, Bundle args) {
         Log.v("**Loader", "onCreateLoader");
@@ -334,82 +382,89 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoadFinished(Loader loader, Cursor cursor) {
         mStretchArray.clear();
-        cursor.moveToFirst();
-        do {
-            String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
-            int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
-            int id = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches._ID));
-            mStretchArray.add(new Stretch(name, time, id));
-        } while (cursor.moveToNext());
-
-        //Adds rest breaks (change stretch position) in between stretches
-        for (int i = 1; i < mStretchArray.size(); i += 2) {
-            mStretchArray.add(i, new Stretch("BREAK", 5, i));
+        if (cursor.getCount() > 0) {
+            cursor.moveToFirst();
+            do {
+                String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
+                int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
+                int id = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches._ID));
+                mStretchArray.add(new Stretch(name, time, id));
+            } while (cursor.moveToNext());
         }
 
 
+        for (int i = 1; i < mStretchArray.size(); i += 2) { //Adds rest breaks (change stretch position) in between stretches
+            mStretchArray.add(i, new Stretch("BREAK", 5, i));
+        }
+
         mAdapter.notifyDataSetChanged();
-        Log.v("*****Loader", "onLoadFinished");
         if (mTimerService != null) {
             mTimerService.updateStretches(mStretchArray);
         }
 
+        newCurrentStretch(mTimerPos);
+        newSumOfStretchTime();
+        updateTotalTimeRemaining();
+
 
     }
+
+
 
     @Override
     public void onLoaderReset(Loader loader) {
         mAdapter.notifyDataSetChanged();
-        Log.v("******", "onLoaderReset");
     }
 
 
-    private void setCurrentStretch(int newPos) {
+    private void newCurrentStretch(int newPos) {
+        updateHighlightedStretch(newPos);
+        updateCurrentStretchDisplay(newPos);
+    }
+
+    private void updateCurrentStretchDisplay(int newPos) {
+        mStretchCountValue.setText(((newPos + 2)/2) + "/" + (mStretchArray.size()+1)/2);
+    }
+
+    private void updateHighlightedStretch(int newPos) {
         int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
         int maxVisPos = mLinearLayoutManager.findLastVisibleItemPosition();
-        Log.v("!!***", mTimerPos + "    highlightCurrentStretch()");
-
-
         if (newPos >= minVisPos && newPos <= maxVisPos) { //Is  new stretch position on-screen
-            Log.v("!!***", mTimerPos + "    Highlight Current");
             if (newPos % 2 == 0) {
-                CardView currentStretch = (CardView) mLinearLayoutManager.findViewByPosition(newPos);
-                LinearLayout linearLayout = (LinearLayout) currentStretch.findViewById(R.id.linear_layout);
-                linearLayout.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.border, null));
-                //linearLayout.setPadding(8,8,8,8);
-
+                RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(newPos);
+                RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
+                relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretchHighlight));
             }
         }
 
-        if (mTimerPos >= minVisPos && mTimerPos <= maxVisPos) { //Is old stretch position on-screen
-
-            if (mTimerPos % 2 == 0) {
-                CardView currentStretch = (CardView) mLinearLayoutManager.findViewByPosition(mTimerPos);
-                LinearLayout linearLayout = (LinearLayout) currentStretch.findViewById(R.id.linear_layout);
-                linearLayout.setBackground(null);
-                //linearLayout.setPadding(0,0,0,0);
+        if (mTimerPos != newPos) { //check to see if current stretch was deleted by user
+            if (mTimerPos >= minVisPos && mTimerPos <= maxVisPos) { //Is old stretch position on-screen
+                if (mTimerPos % 2 == 0) {
+                    RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
+                    RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
+                    relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretch));
+                }
             }
+            mTimerPos = newPos;
         }
-
-        mTimerPos = newPos;
         mLinearLayoutManager.smoothScrollToPosition(mRecyclerView, null, mTimerPos);
-        if (newPos == 0) {
-            Toast.makeText(this, "All done!", Toast.LENGTH_SHORT).show();
+
+    }
+
+    private void newSumOfStretchTime() {
+         mSumOfStretchTime = 0;
+        for (int i = mStretchArray.size() - 1; i > mTimerPos; i-=2) {
+            mSumOfStretchTime = mSumOfStretchTime + mStretchArray.get(i).getTime();
         }
     }
 
-
-    public void initializeLoader() {
-        getSupportLoaderManager().initLoader(1, null, this);
-
-    }
 
     public int getTimerPos() {
         return mTimerPos;
     }
 
 
-    private void registerNotifReciever() {
+    private void registerNotificationReciever() {
         Intent resultIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
         Notification notification = new NotificationCompat.Builder(this)
@@ -426,7 +481,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
                     mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
                     mNotificationManager.notify(1, notification);
-                    Log.v("!!***", mTimerPos + "    Notification Revciever");
                 }
             }
         };
@@ -436,7 +490,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public void showAddStretchDialog() {
         // Create an instance of the dialog fragment and show it
-        AddStretchFragment dialog = AddStretchFragment.newInstance(0, null,"Add New Stretch");
+        AddStretchFragment dialog = AddStretchFragment.newInstance(10, null, "Add New Stretch");
         //DialogFragment dialog = new AddStretchFragment();
         dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
     }
@@ -451,24 +505,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onDialogNegativeClick(DialogFragment dialog) {
 
     }
+
+
 }
 
 //----------------------- Eventually Stuff -----------------------//
 
-//Delete Stretch
 // UI for portrait and landscape
 // Make landscape layout
+// Make tablet layout
 // Notification Layout
-// Sounds
 // Maintain scroll position on orientation change.
-// Edit stretch
+// Stretch Positon on Display UI
+// UI - for breaks
+// UI - Time progress bars
+// Change Hello World on Startup
+//Remove Log Statemtns
+// Strings to resources
+// use async task
+    //settings overflow (about me)
 
-
+//----------------------- Optional -----------------------//
+// Skip to next stretch button - ?
 // Programming to interfaces?
 // Notifications when foregrounded
-// Skip to next stretch button - ?
-//NEXT STRETCH
-
+// NEXT STRETCH
+//Gray reset button when already reset, or no stretches.
 
 //----------------------- Material Stuff -----------------------//
 
