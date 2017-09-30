@@ -105,7 +105,7 @@ public class StretchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        mTimerPos = ((MainActivity) mContext).getTimerPos();
+        mTimerPos = ((MainActivity) mContext).getCurrentStretchPosition();
         switch (holder.getItemViewType()) {
 
             case STRETCH_VIEW_TYPE:
@@ -118,7 +118,7 @@ public class StretchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
                     Uri currentPetUri = ContentUris.withAppendedId(StretchDbContract.Stretches.CONTENT_URI, stretch.getId());
                     int rowsDeleted = mContext.getContentResolver().delete(currentPetUri,null,null);
-
+                    Log.v("***", "adapter position deleted: " + position);
                     ((MainActivity) mContext).onDeleteStretch(position);
                     // TODO: adjust mTimerPos
 

@@ -37,6 +37,7 @@ public class TimerService extends Service {
     static final public String STRETCHES_COMPLETE_KEY = "com.example.nicky.timerpractice.timerservice.STRETCHESCOMPLETE";
 
 
+
     private boolean mTicking;
     private boolean mForeground;
 

@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="1dp"
     android:orientation="vertical"
+    android:background="@color/break_list_item"
     >
 
 </LinearLayout>

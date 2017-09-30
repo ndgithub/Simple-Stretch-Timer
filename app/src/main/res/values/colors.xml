@@ -7,10 +7,15 @@
     <color name="colorSuperDark">#4a148c</color>
 
 
-    <color name="colorStretch">#ffffff</color>
-    <color name="colorStretchHighlight">@color/colorPrimary</color>
+
     <color name="colorDisplayText">@color/colorPrimaryDark</color>
     <color name="colorDisplayBackground">@color/colorPrimary</color>
+    <color name="colorDisplayBackgroundBreak">@color/colorPrimary</color>
+
+    <color name="colorStretch">#ffffff</color>
+    <color name="colorStretchHighlight">@color/colorPrimary</color>
+    <color name="break_list_item">#999999</color>
+
     <color name="colorControlsBackground">@color/colorPrimaryLight</color>
-    <color name="highlightBorder">@color/colorPrimaryDark</color>
+
 </resources>

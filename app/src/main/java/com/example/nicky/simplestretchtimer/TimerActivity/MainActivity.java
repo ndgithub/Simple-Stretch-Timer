@@ -25,10 +25,13 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
@@ -44,38 +47,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>, AddStretchFragment.NoticeDialogListener {
-
-    NotificationCompat.Builder mBuilder;
-    private final int NOTIFICATION_ID = 1;
-
-    private BroadcastReceiver mActivityTickReceiver;
-    private BroadcastReceiver mNotificationTickReciever;
-    private BroadcastReceiver mPosChangeReceiver;
-    private BroadcastReceiver mAllStretchesCompleteReciever;
-
-
-    private TimerService mTimerService;
-    ServiceConnection serviceConnection;
-
-
-    private final String TIMER_TEXT_KEY = "Timer Text Key";
-    private final String TIMER_POS_KEY = "Timer Position Key";
-
-    private NotificationManager mNotificationManager;
-    boolean isBound;
-    private final String IS_BOUND = "isBound";
-
-    private int mTimerPos;
-
-    private LinearLayoutManager mLinearLayoutManager;
-    private StretchAdapter mAdapter;
-    private ArrayList<Stretch> mStretchArray;
-    private RemoteViews mRemoteView;
-    private int newPos;
-    private int mCurrentStretchSecsRemaining;
-    private int mSumOfStretchTime;
-
-    private LocalBroadcastManager mLocalBroadcastManager;
 
     @BindView(R.id.display_time)
     TextView mDisplayText;
@@ -95,6 +66,51 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     TextView mStretchCountValue;
     @BindView(R.id.total_time_value)
     TextView mTotalTime;
+    @BindView(R.id.progress_bar)
+    FrameLayout mProgressBar;
+    @BindView(R.id.progress_container)
+    FrameLayout mProgressContainer;
+
+
+    NotificationCompat.Builder mBuilder;
+    private final int NOTIFICATION_ID = 1;
+
+    private BroadcastReceiver mActivityTickReceiver;
+    private BroadcastReceiver mNotificationTickReciever;
+    private BroadcastReceiver mPosChangeReceiver;
+    private BroadcastReceiver mAllStretchesCompleteReciever;
+
+    private TimerService mTimerService;
+    ServiceConnection serviceConnection;
+
+    private final String TIMER_TEXT_KEY = "Timer Text Key";
+    private final String TIMER_POS_KEY = "Timer Position Key";
+
+    private NotificationManager mNotificationManager;
+    boolean isBound;
+    private final String IS_BOUND = "isBound";
+
+    private Stretch mCurrentStretch;
+
+    private int mTimerPos;
+    int mCurrentStretchLength;
+
+    private LinearLayoutManager mLinearLayoutManager;
+    private StretchAdapter mAdapter;
+    private ArrayList<Stretch> mStretchArray;
+    private RemoteViews mRemoteView;
+
+    private int mScreenWidth;
+
+    private int newPos;
+    private int mCurrentStretchtimeRemaining;
+    private String mStretchOrBreak;
+    static final public String TYPE_BREAK = "break";
+    static final public String TYPE_STRETCH = "stretch";
+
+
+    private LocalBroadcastManager mLocalBroadcastManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,19 +122,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onGlobalLayout() {
                 mDisplayContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                mDisplayContainer.getWidth();
-               // mTimerControls.setMinimumHeight((int) Math.ceil(mDisplayContainer.getHeight() * Math.pow(.618,3)));
+                mScreenWidth = mDisplayContainer.getWidth();
+                // mTimerControls.setMinimumHeight((int) Math.ceil(mDisplayContainer.getHeight() * Math.pow(.618,3)));
                 Log.v("***w", "width: " + mDisplayContainer.getMeasuredWidth());
             }
         });
-
 
         if (savedInstanceState != null) {
             mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
             mTimerPos = savedInstanceState.getInt(TIMER_POS_KEY);
         }
-
-        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
 
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
 
@@ -130,20 +143,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         initializeLoader();
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
+
         mPosChangeReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 newPos = intent.getIntExtra(TimerService.NEW_POSITION_KEY, 0);
-                newCurrentStretch(newPos);
-                newSumOfStretchTime();
-                updateTotalTimeRemaining();
+                mCurrentStretch = mStretchArray.get(newPos);
+                Log.v("***", "position changed to: " + mCurrentStretch.getPosition());
+                onPositionChanged();
             }
         };
 
         mAllStretchesCompleteReciever = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.v("***", "adfcaca");
                 mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow_black_48dp);
             }
         };
@@ -152,29 +165,70 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mLocalBroadcastManager.registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
         mLocalBroadcastManager.registerReceiver(mAllStretchesCompleteReciever, new IntentFilter(TimerService.STRETCHES_COMPLETE_KEY));
 
+        mStretchOrBreak = TYPE_STRETCH;
+
 
     }
 
+    private void onPositionChanged() {
+
+        updateHighlightedStretch(mCurrentStretch.getPosition());
+        updateCurrentStretchDisplay(mCurrentStretch.getPosition());
+        updateUiTotalTimeRemaining(0);
+
+
+        // Highlighted
+        // Display - Count
+        // Display - Total Remaining
+
+        // Display - Stretch or Break stuff
+
+
+    }
+
+    private void updateUiTotalTimeRemaining(int currentStretchRemaining) {
+        mTotalTime.setText(returnTotalStretchTime() + currentStretchRemaining + "");
+    }
+
+    private void newStretchType(int newPos) {
+        mStretchOrBreak = newPos % 2 == 0 ? TYPE_STRETCH : TYPE_BREAK;
+
+    }
+
+    private void updateCurrentStretchDisplay(int newPos) {
+        mStretchCountValue.setText(((newPos + 2) / 2) + "/" + (mStretchArray.size() + 1) / 2);
+    }
+
+    private void updateUiProgressBar(int currentStretchRemaining) {
+        int width;
+        if (mStretchOrBreak == TYPE_STRETCH) {
+            width = mScreenWidth - (mScreenWidth * currentStretchRemaining / mCurrentStretch.getTime());
+        } else {
+            width = (mScreenWidth * currentStretchRemaining / mCurrentStretch.getTime());
+        }
+
+        mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
+        Log.v("***", "progress: " + width);
+    }
 
     @Override
     protected void onStart() {
-
         super.onStart();
-
         mNotificationManager.cancelAll();
-
         serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 TimerService.TimerBinder timerBinder = (TimerService.TimerBinder) service;
                 mTimerService = timerBinder.getService();
                 isBound = true;
-                mTimerPos = mTimerService.getTimerPos();
-                Log.v("***", "service connected");
+                if (!mStretchArray.isEmpty()) {
+                    mCurrentStretch = mStretchArray.get(mTimerService.getTimerPos());
+                }
 
                 mNotificationManager.cancelAll();
                 mTimerService.updateStretches(mStretchArray);
                 mTimerService.stopForeground(true);
+                Log.v("***", "service connected");
 
             }
 
@@ -184,33 +238,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 Log.v("*** - MainActivity", "Service is un-bound");
             }
         };
-
         startService(new Intent(this, TimerService.class));
         bindService(new Intent(this, TimerService.class), serviceConnection, BIND_ABOVE_CLIENT);
-
         mActivityTickReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                int secsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                if (secsRemaining < 60) {
-                    mDisplayText.setText(secsRemaining + "");
-                } else if (secsRemaining % 60 >= 10) {
-                    mDisplayText.setText(secsRemaining / 60 + ":" + secsRemaining % 60);
-                } else {
-                    mDisplayText.setText(secsRemaining / 60 + ":0" + secsRemaining % 60);
-                }
-                mCurrentStretchSecsRemaining=secsRemaining;
-                updateTotalTimeRemaining();
+                int currentStretchRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
 
-
+                updateUiDisplayTime(currentStretchRemaining);
+                updateUiTotalTimeRemaining(currentStretchRemaining);
+                updateUiProgressBar(currentStretchRemaining);
             }
         };
 
         mLocalBroadcastManager.registerReceiver(mActivityTickReceiver, new IntentFilter(TimerService.ONTICK_KEY));
+
+
     }
 
-    private void updateTotalTimeRemaining() {
-        mTotalTime.setText(mSumOfStretchTime + mCurrentStretchSecsRemaining + "");
+    private void updateUiDisplayTime(int timeRemaining) {
+        if (timeRemaining < 60) {
+            mDisplayText.setText(timeRemaining + "");
+        } else if (timeRemaining % 60 >= 10) {
+            mDisplayText.setText(timeRemaining / 60 + ":" + timeRemaining % 60);
+        } else {
+            mDisplayText.setText(timeRemaining / 60 + ":0" + timeRemaining % 60);
+        }
     }
 
     @Override
@@ -225,9 +278,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mActivityTickReceiver);
 
-
         if (mTimerService != null && mTimerService.isTicking()) {
-            registerNotificationReciever();
+            registerNotificationReceiver();
             mTimerService.setForegroundState(true);
         } else {
             mTimerService.stopSelf();
@@ -277,9 +329,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             addStretch("asdf", 5);
             return true;
         }
-
         return super.onOptionsItemSelected(item);
-
     }
 
 
@@ -332,7 +382,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         //initializeLoader must stay at end of this function.
     }
 
-
     public void addStretch(String name, int time) {
         // TODO: scroll to bottom of recycler view
         ContentValues cv = new ContentValues();
@@ -342,28 +391,104 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     public void onDeleteStretch(int deletedPosition) {
-        if (deletedPosition == mTimerPos) {
+        int currentPosition = mCurrentStretch.getPosition();
+        Log.v("***", "position!f = : " + currentPosition);
+        if (deletedPosition == currentPosition) {
             if (mTimerService.isTicking()) {
                 mTimerService.stopTicking();
             }
-            Handler handler = new Handler();
-            if (mTimerPos < mStretchArray.size() - 1) { //If its not the last stretch
+            if (currentPosition < mStretchArray.size() - 1) { //If its not the last stretch
+                Handler handler = new Handler();
                 handler.postDelayed(() -> mTimerService.play(), 200);
-                newCurrentStretch(mTimerPos);
-            } else if (mTimerPos == mStretchArray.size() - 1) { // It it IS the last stretch
+                setCurrentStretch(currentPosition);
+            } else if (currentPosition == mStretchArray.size() - 1) { // It it IS the last stretch
                 mTimerService.timerFinished(1);
-                mTimerPos--;
-
+                Log.v("!!!", "msStretchArray size: " + mStretchArray.size());
+                Log.v("!!!", "currentPosition: " + currentPosition);
+                //mCurrentStretch = mStretchArray.get(currentPosition - 1);
             }
-        } else if (deletedPosition < mTimerPos) {
-            newCurrentStretch(mTimerPos - 2);
-            mTimerService.adjustTimerPos(-2);
+        } else if (deletedPosition < currentPosition) {
+                mCurrentStretch = mStretchArray.get(currentPosition - 2);
+                mTimerService.adjustTimerPos(-2);
+            }
         }
+
+    public void setCurrentStretch(int position) {
+        Log.v("***", "position!: " + position);
+        if (!mStretchArray.isEmpty()) {
+            mCurrentStretch = mStretchArray.get(position);
+        }
+    }
+
+    private void updateHighlightedStretch(int newPos) {
+        int currentPos = mCurrentStretch.getPosition();
+        int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
+        int maxVisPos = mLinearLayoutManager.findLastVisibleItemPosition();
+        if (newPos >= minVisPos && newPos <= maxVisPos) { //Is  new stretch position on-screen
+            if (newPos % 2 == 0) {
+                RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(newPos);
+                RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
+                relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretchHighlight));
+            }
+        }
+        if (currentPos != newPos) { //check to see if current stretch was deleted by user
+            if (currentPos >= minVisPos && currentPos <= maxVisPos) { //Is old stretch position on-screen
+                if (currentPos % 2 == 0) {
+                    RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(currentPos);
+                    RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
+                    relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretch));
+                }
+            }
+            mCurrentStretch = mStretchArray.get(newPos);
+        }
+        mLinearLayoutManager.smoothScrollToPosition(mRecyclerView, null, mCurrentStretch.getPosition());
 
     }
 
+    private int returnTotalStretchTime() {
+        int sumOfStretchTime = 0;
+        for (int i = mStretchArray.size() - 1; i > mCurrentStretch.getPosition(); i -= 2) {
+            sumOfStretchTime = sumOfStretchTime + mStretchArray.get(i).getTime();
+        }
+        return sumOfStretchTime;
+    }
 
-    //----------------------- CursorLoader Stuff -----------------------//
+
+    public int getCurrentStretchPosition() {
+        return mCurrentStretch.getPosition();
+    }
+
+    private void registerNotificationReceiver() {
+        Intent resultIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
+        Notification notification = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_grade_black_18dp)
+                .setContent(mRemoteView)
+                .setContentIntent(pendingIntent).build();
+
+        mTimerService.startForeground(NOTIFICATION_ID, notification);
+
+        mNotificationTickReciever = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (mTimerService.isForeground()) {
+                    double timeRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
+                    mRemoteView.setTextViewText(R.id.remote_text, timeRemaining + " ");
+                    mNotificationManager.notify(1, notification);
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).
+                registerReceiver(mNotificationTickReciever, new IntentFilter(TimerService.ONTICK_KEY));
+    }
+
+    public void showAddStretchDialog() {
+        // Create an instance of the dialog fragment and show it
+        AddStretchFragment dialog = AddStretchFragment.newInstance(10, null, "Add New Stretch");
+        //DialogFragment dialog = new AddStretchFragment();
+        dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+    }
+//----------------------- CursorLoader Stuff -----------------------//
 
     public void initializeLoader() {
         getSupportLoaderManager().initLoader(1, null, this);
@@ -382,19 +507,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoadFinished(Loader loader, Cursor cursor) {
         mStretchArray.clear();
+        int position = 0;
         if (cursor.getCount() > 0) {
             cursor.moveToFirst();
             do {
                 String name = cursor.getString(cursor.getColumnIndex(StretchDbContract.Stretches.NAME));
                 int time = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches.TIME));
                 int id = cursor.getInt(cursor.getColumnIndex(StretchDbContract.Stretches._ID));
-                mStretchArray.add(new Stretch(name, time, id));
+                mStretchArray.add(new Stretch(name, time, position, id));
+                position++;
+                mStretchArray.add(new Stretch("Change Position", 5, position, id));
+                position++;
             } while (cursor.moveToNext());
-        }
-
-
-        for (int i = 1; i < mStretchArray.size(); i += 2) { //Adds rest breaks (change stretch position) in between stretches
-            mStretchArray.add(i, new Stretch("BREAK", 5, i));
+            mStretchArray.remove(mStretchArray.size() - 1);
+            setCurrentStretch(mTimerPos);
+            updateUiTotalTimeRemaining(mCurrentStretch.getTime());
         }
 
         mAdapter.notifyDataSetChanged();
@@ -402,13 +529,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mTimerService.updateStretches(mStretchArray);
         }
 
-        newCurrentStretch(mTimerPos);
-        newSumOfStretchTime();
-        updateTotalTimeRemaining();
 
 
+        // UI List of stretches
+
+        // Display Count
+        // Total Time Remaining
     }
-
 
 
     @Override
@@ -416,86 +543,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mAdapter.notifyDataSetChanged();
     }
 
-
-    private void newCurrentStretch(int newPos) {
-        updateHighlightedStretch(newPos);
-        updateCurrentStretchDisplay(newPos);
-    }
-
-    private void updateCurrentStretchDisplay(int newPos) {
-        mStretchCountValue.setText(((newPos + 2)/2) + "/" + (mStretchArray.size()+1)/2);
-    }
-
-    private void updateHighlightedStretch(int newPos) {
-        int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
-        int maxVisPos = mLinearLayoutManager.findLastVisibleItemPosition();
-        if (newPos >= minVisPos && newPos <= maxVisPos) { //Is  new stretch position on-screen
-            if (newPos % 2 == 0) {
-                RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(newPos);
-                RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
-                relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretchHighlight));
-            }
-        }
-
-        if (mTimerPos != newPos) { //check to see if current stretch was deleted by user
-            if (mTimerPos >= minVisPos && mTimerPos <= maxVisPos) { //Is old stretch position on-screen
-                if (mTimerPos % 2 == 0) {
-                    RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
-                    RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
-                    relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretch));
-                }
-            }
-            mTimerPos = newPos;
-        }
-        mLinearLayoutManager.smoothScrollToPosition(mRecyclerView, null, mTimerPos);
-
-    }
-
-    private void newSumOfStretchTime() {
-         mSumOfStretchTime = 0;
-        for (int i = mStretchArray.size() - 1; i > mTimerPos; i-=2) {
-            mSumOfStretchTime = mSumOfStretchTime + mStretchArray.get(i).getTime();
-        }
-    }
-
-
-    public int getTimerPos() {
-        return mTimerPos;
-    }
-
-
-    private void registerNotificationReciever() {
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
-        Notification notification = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.drawable.ic_grade_black_18dp)
-                .setContent(mRemoteView)
-                .setContentIntent(pendingIntent).build();
-
-        mTimerService.startForeground(NOTIFICATION_ID, notification);
-
-        mNotificationTickReciever = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (mTimerService.isForeground()) {
-                    double secsRemaining = intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                    mRemoteView.setTextViewText(R.id.remote_text, secsRemaining + " ");
-                    mNotificationManager.notify(1, notification);
-                }
-            }
-        };
-        LocalBroadcastManager.getInstance(this).
-                registerReceiver(mNotificationTickReciever, new IntentFilter(TimerService.ONTICK_KEY));
-    }
-
-    public void showAddStretchDialog() {
-        // Create an instance of the dialog fragment and show it
-        AddStretchFragment dialog = AddStretchFragment.newInstance(10, null, "Add New Stretch");
-        //DialogFragment dialog = new AddStretchFragment();
-        dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
-    }
-
-    //----------------------- Dialoge Fragment Interface methods -----------------------//
+    //----------------------- Dialog Fragment Interface methods -----------------------//
     @Override
     public void onDialogPositiveClick(DialogFragment dialog, int minValue, int secValue, String stretchName) {
         addStretch(stretchName, secValue + (minValue * 60));
@@ -510,31 +558,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 }
 
 //----------------------- Eventually Stuff -----------------------//
-
+// UI - Time progress bars
+// Total Time during breaks
+// UI - for breaks
 // UI for portrait and landscape
 // Make landscape layout
 // Make tablet layout
 // Notification Layout
 // Maintain scroll position on orientation change.
 // Stretch Positon on Display UI
-// UI - for breaks
-// UI - Time progress bars
-// Change Hello World on Startup
+// Show time on startup
+
 //Remove Log Statemtns
 // Strings to resources
 // use async task
-    //settings overflow (about me)
+//settings overflow (about me)
 
 //----------------------- Optional -----------------------//
 // Skip to next stretch button - ?
-// Programming to interfaces?
 // Notifications when foregrounded
-// NEXT STRETCH
-//Gray reset button when already reset, or no stretches.
+//Grayed out reset button when already reset, or no stretches.
+//Grey highlight when paused.
 
-//----------------------- Material Stuff -----------------------//
-
-// A touch target should be at least 48 X 48
 
 //----------------------- Keep in Mind Stuff -----------------------//
 
@@ -542,3 +587,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 // before onStartCommand). If service is already running, it does not get called.
 
 //onLoadFinished of cursor adapter gets called everytime data changes.
+
+
+//----------------------- Things That Change -----------------------//
+// Current Stretch Pos (Pos Change)  -  Timer up, or reset
+// Highlighted
+// Display - Total Remaining
+// Display - Stretch or Break
+// Display - Colors
+// Display - Progress Bar
+// Display - Count
+// Stretch Array  - Add, edit or delete stretch  - User adds or deletes
+// UI List of stretches
+// Display Count
+// Total Time Remaining
+// Current Time - Timer Ticking
+// Display - Time
+// Total time remaining
+
+
