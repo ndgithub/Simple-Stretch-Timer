@@ -10,7 +10,9 @@
     <color name="colorStretch">#ffffff</color>
     <color name="colorStretchHighlight">@color/colorPrimary</color>
     <color name="colorDisplayText">@color/colorPrimaryDark</color>
+    <color name="colorDisplayTextBreak">#333333</color>
     <color name="colorDisplayBackground">@color/colorPrimary</color>
     <color name="colorControlsBackground">@color/colorPrimaryLight</color>
     <color name="highlightBorder">@color/colorPrimaryDark</color>
+    <color name="colorDisplayBackgroundBreak">#999999</color>
 </resources>
