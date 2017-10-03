@@ -77,6 +77,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RemoteViews mRemoteView;
     private int mCurrentStretchSecsRemaining;
 
+    private int mScreenWidth;
+
     private LocalBroadcastManager mLocalBroadcastManager;
 
     @BindView(R.id.display_time)
@@ -115,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onGlobalLayout() {
                 mDisplayContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                mDisplayContainer.getWidth();
+                mScreenWidth = mDisplayContainer.getWidth();
                 // mTimerControls.setMinimumHeight((int) Math.ceil(mDisplayContainer.getHeight() * Math.pow(.618,3)));
                 Log.v("***w", "width: " + mDisplayContainer.getMeasuredWidth());
             }
