@@ -75,6 +75,28 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <FrameLayout
+                android:id="@+id/progress_container"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_gravity="center"
+                android:textAlignment="center">
+
+                <FrameLayout
+                    android:id="@+id/progress_bar"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:background="@color/colorPrimaryDark" />
+
+                <!--<FrameLayout-->
+                <!--android:id="@+id/progress_bar"-->
+                <!--android:layout_width="40dp"-->
+                <!--android:layout_height="match_parent"-->
+                <!--android:layout_gravity="center"-->
+                <!--android:background="#ffffff"></FrameLayout>-->
+            </FrameLayout>
+
         </LinearLayout>
 
     </android.support.v7.widget.CardView>

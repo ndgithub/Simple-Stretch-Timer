@@ -26,9 +26,11 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -97,6 +99,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     TextView mTotalTime;
     @BindView(R.id.display)
     LinearLayout mDisplay;
+    @BindView(R.id.progress_bar)
+    FrameLayout mProgressBar;
+    @BindView(R.id.progress_container)
+    FrameLayout mProgressContainer;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -189,6 +196,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+    private void updateUiProgressBar(int currentStretchRemaining) {
+        int width;
+        if (mStretchOrBreak == TYPE_STRETCH) {
+            width = mScreenWidth - (mScreenWidth * currentStretchRemaining / mCurrentStretch.getTime());
+        } else {
+            width = (mScreenWidth * currentStretchRemaining / mCurrentStretch.getTime());
+        }
+
+        mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
+        Log.v("***", "progress: " + width);
+    }
     private void updateHighlightedStretch() {
         int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
         int maxVisPos = mLinearLayoutManager.findLastVisibleItemPosition();
