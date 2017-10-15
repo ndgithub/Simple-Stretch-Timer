@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "663987372541",
+    "firebase_url": "https://simple-stretch-timer.firebaseio.com",
+    "project_id": "simple-stretch-timer",
+    "storage_bucket": "simple-stretch-timer.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:663987372541:android:575bb246cec13e16",
+        "android_client_info": {
+          "package_name": "com.example.nicky.simplestretchtimer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "663987372541-erba2g3fdlatoa9go790rdtdlcrsviuf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIqeYr8abN1NAkAr5j-KlyXAkW0nEI51U"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

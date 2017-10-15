@@ -2,4 +2,17 @@
     <string name="app_name">Simple Stretch Timer</string>
     <string name="action_settings">Settings</string>
     <string name="orientation">vertical</string>
+
+    <string name="cd_options">options</string>
+    <string name="cd_time_remaining">Time Remaining</string>
+    <string name="cd_current_stretch">Current Stretch</string>
+    <string name="cd_total_time_remaining">Total Time Remaining</string>
+    <string name="cd_list_of_stretches">List of Stretches</string>
+    <string name="cd_reset">Reset</string>
+    <string name="cd_play_pause">Play/Pause</string>
+    <string name="cd_add_stretch">Add Stretch</string>
+    <string name="cd_stretch_time">Stretch Time</string>
+    <string name="cd_delete_stretch">Remove Stretch</string>
+    <string name="cd_stretch_name">Stretch Name</string>
+
 </resources>

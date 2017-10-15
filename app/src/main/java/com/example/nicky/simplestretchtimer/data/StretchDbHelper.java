@@ -33,7 +33,7 @@ public class StretchDbHelper extends SQLiteOpenHelper {
                 StretchDbContract.Stretches.TABLE_NAME + " (" +
                 StretchDbContract.Stretches.NAME + "," +
                 StretchDbContract.Stretches.TIME +
-                ") VALUES ('First Stretch',5)";
+                ") VALUES ('First Stretch',30)";
 
         Timber.v(CREATE_TABLE_QUERY);
         Timber.v(CREATE_FIRST_ENTRY_STATEMENT);
@@ -46,5 +46,4 @@ public class StretchDbHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
     }
-//TODO: Review the android MVP pattern.
 }

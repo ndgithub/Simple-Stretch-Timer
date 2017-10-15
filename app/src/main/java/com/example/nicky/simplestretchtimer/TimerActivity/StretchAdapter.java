@@ -23,7 +23,6 @@ import android.widget.Toast;
 import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 import com.example.nicky.simplestretchtimer.data.StretchDbContract;
-import com.squareup.haha.perflib.Main;
 
 import java.util.ArrayList;
 

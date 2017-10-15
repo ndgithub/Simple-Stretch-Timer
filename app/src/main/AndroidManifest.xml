@@ -2,26 +2,42 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.nicky.simplestretchtimer">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
+        android:name=".SimpleStretchTimer"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:name=".SimpleStretchTimer">
+        android:theme="@style/AppTheme">
+
         <provider
-            android:authorities="com.example.nicky.simplestretchtimer.stretches"
-            android:name=".data.StretchProvider" />
-        <service android:name=".TimerActivity.TimerService"
-            />
-        <activity
-            android:name=".TimerActivity.MainActivity">
+            android:name=".data.StretchProvider"
+            android:authorities="com.example.nicky.simplestretchtimer.stretches" />
+        <service android:name=".TimerActivity.TimerService" />
+
+        <activity android:name=".TimerActivity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".aboutactivity.AboutActivity"
+            android:parentActivityName=".TimerActivity.MainActivity"
+            android:theme="@style/AboutTheme" />
+
+        <receiver android:name="WidgetProvider">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget" />
+        </receiver>
     </application>
 
 </manifest>

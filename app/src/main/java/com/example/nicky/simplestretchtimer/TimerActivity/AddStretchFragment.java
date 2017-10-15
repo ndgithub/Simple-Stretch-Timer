@@ -8,15 +8,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 
 import com.example.nicky.simplestretchtimer.R;
-import com.squareup.haha.perflib.Main;
 
 import butterknife.BindView;
 import butterknife.BindViews;
@@ -72,6 +69,7 @@ public class AddStretchFragment extends DialogFragment {
         NumberPicker secPicker = (NumberPicker) dialogueView.findViewById(R.id.sec_picker);
         secPicker.setMaxValue(55);
         secPicker.setValue(30);
+
 
         if (getArguments() != null) {
             secPicker.setValue(getArguments().getInt("time"));
