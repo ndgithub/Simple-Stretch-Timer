@@ -5,24 +5,29 @@
     android:id="@+id/list_item_container"
     android:layout_width="match_parent"
     android:layout_height="72dp"
-    android:orientation="horizontal"
-    android:padding="16dp"
-    >
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/stretch_time"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:paddingLeft="8dp"
-        android:textSize="32dp" />
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:contentDescription="@string/cd_stretch_time"/>
 
     <TextView
         android:id="@+id/stretch_name"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_toRightOf="@+id/stretch_time" />
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignBaseline="@+id/stretch_time"
+        android:textSize="24dp"
+        android:layout_marginLeft="96dp"
+        android:layout_marginStart="96dp"
+        android:contentDescription="@string/cd_stretch_name"/>
 
     <ImageView
         android:id="@+id/delete_button"
@@ -30,8 +35,9 @@
         android:layout_height="match_parent"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:background="#cccccc"
-        android:src="@drawable/ic_close_black_36dp" />
-
+        android:tint="@color/deleteButton"
+        android:src="@drawable/ic_close_black_36dp"
+        android:contentDescription="@string/cd_delete_stretch"
+         />
 
 </RelativeLayout>

@@ -13,9 +13,6 @@ public class Stretch {
     private Integer mId;
 
 
-    public static final int STRETCH = 0;
-    public static final int BREAK = 1;
-
     public Stretch(@Nullable String name, int time, int stretchType,@Nullable Integer dbId) {
         this.mName = name;
         this.mTime = time;
@@ -42,10 +39,6 @@ public class Stretch {
 
     public int getId() {
         return this.mId;
-    }
-
-    public int getStretchType() {
-        return this.mStretchType;
     }
 
 }

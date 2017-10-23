@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -28,17 +29,22 @@ public class AddStretchFragment extends DialogFragment {
     private NoticeDialogListener mListener;
     private String mTitle;
 
+    public static final int TYPE_EDIT = 0;
+    public static final int TYPE_ADD = 1;
 
-    static AddStretchFragment newInstance(@Nullable Integer time, @Nullable String name, String title) {
+
+    static AddStretchFragment newInstance(@Nullable Integer time, @Nullable String name, @Nullable Integer id, int type) {
         AddStretchFragment addStretchFragment = new AddStretchFragment();
 
         // Supply num input as an argument.
         Bundle args = new Bundle();
         args.putString("name", name);
         args.putInt("time", time);
-        args.putString("title",title);
+        args.putInt("type", type);
+        if (id != null) { // Will be null if add stretch (not edit stretch)
+            args.putInt("id", id);
+        }
         addStretchFragment.setArguments(args);
-
         return addStretchFragment;
     }
 
@@ -60,29 +66,28 @@ public class AddStretchFragment extends DialogFragment {
         // Inflate and set the layout for the dialog
         // Pass null as the parent view because its going in the dialog layout
         View dialogueView = inflater.inflate(R.layout.add_stretch_dialogue_fragment, null);
-        EditText stretchName = (EditText) dialogueView.findViewById(R.id.stretch_name);
+        EditText stretchName = dialogueView.findViewById(R.id.stretch_name);
 
-        NumberPicker minPicker = (NumberPicker) dialogueView.findViewById(R.id.min_picker);
+        NumberPicker minPicker = dialogueView.findViewById(R.id.min_picker);
         minPicker.setMaxValue(10);
         minPicker.setValue(0);
 
-        NumberPicker secPicker = (NumberPicker) dialogueView.findViewById(R.id.sec_picker);
+        NumberPicker secPicker = dialogueView.findViewById(R.id.sec_picker);
         secPicker.setMaxValue(55);
         secPicker.setValue(30);
 
 
-        if (getArguments() != null) {
-            secPicker.setValue(getArguments().getInt("time"));
-            stretchName.setText(getArguments().getString("name"));
-            mTitle = getArguments().getString("title");
-        }
+        secPicker.setValue(getArguments().getInt("time"));
+        stretchName.setText(getArguments().getString("name"));
+
+        mTitle = (getArguments().getInt("type") == TYPE_ADD) ? getString(R.string.add_stretch) : getString(R.string.edit_stretch);
 
         builder.setView(dialogueView);
 
         builder.setMessage(mTitle)
-                .setPositiveButton("Add", (dialog, id) -> mListener.onDialogPositiveClick(
-                        null, minPicker.getValue(), secPicker.getValue(), stretchName.getText() + ""))
-                .setNegativeButton("Cancel", (dialog, id) -> {
+                .setPositiveButton(R.string.add, (dialog, id) -> mListener.onDialogPositiveClick(
+                        null, minPicker.getValue(), secPicker.getValue(), stretchName.getText() + "", getArguments().getInt("id"), getArguments().getInt("type")))
+                .setNegativeButton(R.string.cancel, (dialog, id) -> {
                     // User cancelled the dialog
                 });
         // Create the AlertDialog object and return it
@@ -91,9 +96,9 @@ public class AddStretchFragment extends DialogFragment {
 
 
     public interface NoticeDialogListener {
-        public void onDialogPositiveClick(DialogFragment dialog, int minValue, int secValue, String stretchName);
+        void onDialogPositiveClick(DialogFragment dialog, int minValue, int secValue, String stretchName, Integer id, int type);
 
-        public void onDialogNegativeClick(DialogFragment dialog);
+        void onDialogNegativeClick(DialogFragment dialog);
     }
 
 

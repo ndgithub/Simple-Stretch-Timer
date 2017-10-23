@@ -40,11 +40,11 @@ public class AboutActivity extends AppCompatActivity {
     @BindView(R.id.info)
     TextView mInfo;
 
-
     private String mTitleText;
     private String mInfoText;
     private AdView mAdView;
 
+    private static final String JSON_URL = "https://api.myjson.com/bins/1045g5";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -52,12 +52,9 @@ public class AboutActivity extends AppCompatActivity {
         setContentView(R.layout.about_activity);
         ButterKnife.bind(this);
         GetAboutTask getAboutTask = new GetAboutTask();
-        URL url = createUrl("https://api.myjson.com/bins/1045g5");
+        URL url = createUrl(JSON_URL);
         getAboutTask.execute(url);
-
-        //sMobileAds.initialize(this, "ca-app-pub-9905467979125118~3385635611");
-
-        mAdView = (AdView) findViewById(R.id.adView);
+        mAdView = findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
     }
@@ -82,10 +79,10 @@ public class AboutActivity extends AppCompatActivity {
                     inputStream = connection.getInputStream();
                     jsonResponseString = readFromStream(inputStream);
                 } else {
-                    Toast.makeText(AboutActivity.this, "There was a problem loading this page", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AboutActivity.this, R.string.problem_loading_page, Toast.LENGTH_SHORT).show();
                 }
             } catch (IOException e) {
-                Toast.makeText(AboutActivity.this, "There was a problem loading this page", Toast.LENGTH_SHORT).show();
+                Toast.makeText(AboutActivity.this, R.string.problem_loading_page, Toast.LENGTH_SHORT).show();
             } finally {
                 if (connection != null) {
                     connection.disconnect();
@@ -105,7 +102,7 @@ public class AboutActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(String result) {
-            JSONObject jsonObject = null;
+            JSONObject jsonObject;
             try {
                 jsonObject = new JSONObject(result);
                 mTitleText = jsonObject.getString("Title");
@@ -119,10 +116,6 @@ public class AboutActivity extends AppCompatActivity {
 
         }
 
-        private void parseJson(String result) throws JSONException {
-
-
-        }
 
         private String readFromStream(InputStream inputStream) throws IOException {
             StringBuilder output = new StringBuilder();
@@ -151,7 +144,3 @@ public class AboutActivity extends AppCompatActivity {
     }
 
 }
-
-// ad id: ca-app-pub-99054679791251184742949310
-
-// url for JSON https://api.myjson.com/bins/170zs5

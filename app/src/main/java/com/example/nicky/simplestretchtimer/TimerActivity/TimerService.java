@@ -9,15 +9,12 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 
 import java.util.ArrayList;
 
-import timber.log.Timber;
 
 /**
  * Created by Nicky on 8/13/17.
@@ -89,18 +86,14 @@ public class TimerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.v("*** - Service ", "onCreate");
         localBroadcaster = LocalBroadcastManager.getInstance(this);
         mTimerPos = 0;
-
         mMediaPlayerDing = MediaPlayer.create(getApplicationContext(), R.raw.bell);
         mMediaPlayerDingFinish = MediaPlayer.create(getApplicationContext(), R.raw.ding_finish);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(this, "Service onStartCommand", Toast.LENGTH_SHORT).show();
-        Log.v("*** - Service ", "onStartCommand");
         stopForeground(true);
         setForegroundState(false);
 
@@ -139,12 +132,11 @@ public class TimerService extends Service {
             @Override
             public void onTick(long millisUntilFinished) {
                 broadcastTick(millisUntilFinished);
-                Log.v("***", "millisUntilFinished: " + millisUntilFinished);
             }
 
             @Override
             public void onFinish() {
-                timerFinished(1);
+                timerFinished();
             }
         };
         Handler handler = new Handler();
@@ -156,63 +148,42 @@ public class TimerService extends Service {
     public void stopTicking() {
         countDownTimer.cancel();
         mTicking = false;
-
     }
 
     private long returnCountdownTime() {
-
-            return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
-
+        return (timesArray.get(mTimerPos) * 1000) - mTimeElapsed;
     }
 
 
-
-
-    public void timerFinished(int advNum) {
+    public void timerFinished() {
 
         if (isStretchesRemaining()) {
-            goToStretchPosition(mTimerPos + advNum);
+            goToStretchPosition(mTimerPos + 1);
             startTimer(returnCountdownTime());
-            Toast.makeText(getApplicationContext(), "Ding", Toast.LENGTH_SHORT).show();
             if (mTimerPos % 2 == 1) {
                 mMediaPlayerDing.start();
             }
-
         } else {
             reset();
             mMediaPlayerDingFinish.start();
             broadcastAllStretchesComplete();
-            if (isForeground()) {
-                // TODO:  headsup notification
-            }
-
         }
     }
 
-
-
-    private void goToNextStretch() {
-        goToStretchPosition(mTimerPos + 1);
-    }
 
     private boolean isStretchesRemaining() {
         return mTimerPos < timesArray.size() - 1;
     }
 
     private void goToStretchPosition(int timerPosition) {
-        Log.v("***", mTimerPos + "    goToStretchPosition ");
         mTimerPos = timerPosition;
         mTimeElapsed = 0;
         broadcastPositionChange(mTimerPos);
-
-
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.v("*** - Service ", "onDestroy");
-        Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
         releaseMediaPlayer();
     }
 
@@ -228,22 +199,18 @@ public class TimerService extends Service {
         Intent posIntent = new Intent(POSITION_CHANGED_KEY);
         posIntent.putExtra(NEW_POSITION_KEY, newPosition);
         localBroadcaster.sendBroadcast(posIntent);
-        Log.v("!!***", newPosition + "    Broadcast (Position Change)");
     }
 
     private void broadcastAllStretchesComplete() {
         Intent intent = new Intent(STRETCHES_COMPLETE_KEY);
         localBroadcaster.sendBroadcast(intent);
-
     }
 
 
     public class TimerBinder extends Binder {
-
         TimerService getService() {
             return TimerService.this;
         }
-
     }
 
     public void updateStretches(ArrayList<Stretch> stretches) {
@@ -251,7 +218,6 @@ public class TimerService extends Service {
         for (Stretch stretch : stretches) {
             timesArray.add(stretch.getTime());
         }
-        Log.v("Array***2", "timesArray: " + timesArray.toString());
 
     }
 
@@ -260,13 +226,7 @@ public class TimerService extends Service {
     }
 
     public void adjustTimerPos(int adj) {
-        Log.v("***", "Old mTimerPos: " + mTimerPos);
         this.mTimerPos = mTimerPos + adj;
-        Log.v("***", "New mTimerPos: " + mTimerPos);
     }
 
 }
-
-
-// TODO: dont' create new intent on every tick .
-// TODO: program on interfaces check .

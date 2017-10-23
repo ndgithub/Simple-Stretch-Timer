@@ -1,19 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#ba68c8</color>
-    <color name="colorPrimaryDark">#883997</color>
-    <color name="colorPrimaryLight">#ee98fb</color>
+    <color name="colorPrimary">#9575cd</color>
+    <color name="colorPrimaryDark">#65499c</color>
+    <color name="colorPrimaryLight">#d1c4e9</color>
     <color name="colorAccent">#00e676</color>
     <color name="colorSuperDark">#4a148c</color>
 
-
-    <color name="colorStretch">#ffffff</color>
-    <color name="colorStretchHighlight">@color/colorPrimary</color>
     <color name="colorDisplayText">@color/colorPrimaryDark</color>
+    <color name="colorDisplayBackground">@color/colorPrimaryLight</color>
+    <color name="progressBar">@color/colorPrimaryDark</color>
+    <color name="progressBarContainer">@color/colorPrimary</color>
+
     <color name="colorDisplayTextBreak">#333333</color>
-    <color name="colorDisplayBackground">#ffffff</color>
-    <color name="colorControlsBackground">@color/colorPrimaryLight</color>
+    <color name="colorDisplayBackgroundBreak">#cccccc</color>
+    <color name="progressBarBreak">#999999</color>
+    <color name="progressBarContainerBreak">#cccccc</color>
+
+
+    <color name="stretchItemBg">#ffffff</color>
+    <color name="stretchItemText">#999999</color>
+    <color name="stretchItemDelete">#999999</color>
+
+
+    <color name="stretchItemBgCurrent">@color/colorPrimaryLight</color>
+    <color name="stretchItemTextCurrent">@color/colorPrimaryDark</color>
+    <color name="stretchItemDeleteCurrent">@color/colorPrimary</color>
+
+
+    <color name="colorControlsBackground">#cccccc</color>
     <color name="highlightBorder">@color/colorPrimaryDark</color>
-    <color name="colorDisplayBackgroundBreak">#999999</color>
+
     <color name="colorNotificationBackground">#ffffff</color>
+
+    <color name="breakListItemBackground">#cccccc</color>
+    <color name="deleteButton">#999999</color>
+    <color name="settings">#666666</color>
+
+
 </resources>

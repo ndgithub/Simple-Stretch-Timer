@@ -14,7 +14,9 @@ public final class StretchDbContract {
 
     public static final String CONTENT_AUTHORITY = "com.example.nicky.simplestretchtimer.stretches";
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
+
     public static final String PATH_STRETCHES = ".";
+
 
 
     public static class Stretches {

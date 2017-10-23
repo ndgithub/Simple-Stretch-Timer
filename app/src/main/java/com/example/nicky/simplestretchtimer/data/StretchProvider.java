@@ -25,8 +25,8 @@ public class StretchProvider extends ContentProvider {
     private static final int STRETCHES_ID = 1;
 
 
-
     private static final UriMatcher sUriMatcher = buildUriMatcher();
+
     private static UriMatcher buildUriMatcher() {
         final UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
         final String authority = StretchDbContract.CONTENT_AUTHORITY;
@@ -54,14 +54,14 @@ public class StretchProvider extends ContentProvider {
                 break;
             case STRETCHES_ID:
                 selection = StretchDbContract.Stretches._ID + "=?";
-                selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
                 cursor = database.query(StretchDbContract.Stretches.TABLE_NAME, projection, selection, selectionArgs,
                         null, null, sortOrder);
                 break;
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
-        cursor.setNotificationUri(getContext().getContentResolver(),uri);
+        cursor.setNotificationUri(getContext().getContentResolver(), uri);
         return cursor;
     }
 
@@ -81,7 +81,7 @@ public class StretchProvider extends ContentProvider {
             case STRETCHES:
                 if (id == -1) {
                     Timber.v("Failed to insert row for " + uri);
-                    Toast.makeText(getContext(),"Woops! Couldn't add stretch",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Woops! Couldn't add stretch", Toast.LENGTH_SHORT).show();
                     return null;
                 }
                 getContext().getContentResolver().notifyChange(uri, null);
@@ -103,10 +103,9 @@ public class StretchProvider extends ContentProvider {
                 return database.delete(StretchDbContract.Stretches.TABLE_NAME, selection, selectionArgs);
             case STRETCHES_ID:
                 selection = StretchDbContract.Stretches._ID + "=?";
-                selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
                 int number = database.delete(StretchDbContract.Stretches.TABLE_NAME, selection, selectionArgs);
-
-            getContext().getContentResolver().notifyChange(uri, null);
+                getContext().getContentResolver().notifyChange(uri, null);
                 return number;
             default:
                 throw new IllegalArgumentException("Deletion is not supported for " + uri);
@@ -122,7 +121,8 @@ public class StretchProvider extends ContentProvider {
                 return database.update(StretchDbContract.Stretches.TABLE_NAME, values, selection, selectionArgs);
             case STRETCHES_ID:
                 selection = StretchDbContract.Stretches._ID + "=?";
-                selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                getContext().getContentResolver().notifyChange(uri, null);
                 return database.update(StretchDbContract.Stretches.TABLE_NAME, values, selection, selectionArgs);
             default:
                 throw new IllegalArgumentException("Update is not supported for " + uri);

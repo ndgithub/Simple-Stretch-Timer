@@ -10,7 +10,8 @@
         android:id="@+id/display_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="618">
+        android:layout_weight="618"
+        android:padding="16dp">
 
         <LinearLayout
             android:id="@+id/display"
@@ -19,75 +20,103 @@
             android:background="@color/colorDisplayBackground"
             android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/settings"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:src="@drawable/ic_more_vert_black_48dp"
-                android:text="settings" />
-
-            <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-                android:id="@+id/display_time"
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_gravity="center_horizontal|center_vertical"
-                android:layout_weight="1000"
-                android:gravity="center"
-                android:maxLines="1"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:text="-"
-                android:textColor="@color/colorDisplayText"
-                app:autoSizeTextType="uniform" />
+                android:layout_weight="1000">
+
+                <ImageView
+                    android:id="@+id/settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="64dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
+                    android:contentDescription="@string/cd_settings"
+                    android:src="@drawable/ic_more_vert_black_48dp"
+                    android:tint="@color/settings" />
+
+                <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:id="@+id/display_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/cd_time_remaining"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:text="-"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorDisplayText"
+                    app:autoSizeTextType="uniform" />
+            </RelativeLayout>
 
             <LinearLayout
                 android:id="@+id/display_info"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_height="0dp"
+                android:layout_weight="382"
+                android:orientation="horizontal"
+                android:paddingBottom="8dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
                     <TextView
                         android:id="@+id/stretch_count_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:text="Current Stretch" />
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:paddingLeft="48dp"
+                        android:paddingRight="48dp"
+                        android:text="@string/current_stretch"
+                        android:textColor="@color/colorDisplayText"
+                        app:autoSizeTextType="uniform" />
 
                     <TextView
                         android:id="@+id/stretch_count_value"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:textStyle="bold" />
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:contentDescription="@string/cd_stretch_number"
+                        android:gravity="center"
+                        android:textColor="@color/colorDisplayText"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
                     <TextView
                         android:id="@+id/total_time_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:text="Total Time Remaining:" />
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:paddingLeft="46dp"
+                        android:paddingRight="46dp"
+                        android:text="@string/total_remaining"
+                        android:textColor="@color/colorDisplayText"
+                        app:autoSizeTextType="uniform" />
 
 
                     <TextView
                         android:id="@+id/total_time_value"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:textStyle="bold" />
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:contentDescription="@string/cd_total_time_remaining"
+                        android:gravity="center"
+                        android:textColor="@color/colorDisplayText"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -97,6 +126,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="10dp"
                 android:layout_gravity="center"
+                android:background="@color/progressBarContainer"
                 android:textAlignment="center">
 
                 <FrameLayout
@@ -104,14 +134,9 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_gravity="center"
-                    android:background="@color/colorPrimaryDark" />
+                    android:background="@color/progressBar" />
 
-                <!--<FrameLayout-->
-                <!--android:id="@+id/progress_bar"-->
-                <!--android:layout_width="40dp"-->
-                <!--android:layout_height="match_parent"-->
-                <!--android:layout_gravity="center"-->
-                <!--android:background="#ffffff"></FrameLayout>-->
+
             </FrameLayout>
 
         </LinearLayout>
@@ -123,16 +148,13 @@
         android:layout_height="0dp"
         android:layout_weight="1000">
 
-
         <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#ffffff"
-            android:paddingLeft="@dimen/horizontal_margin_phone"
-            android:paddingRight="@dimen/horizontal_margin_phone"
-
-            />
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/timer_controls"
+            android:layout_alignParentTop="true"
+            android:background="#ffffff" />
 
         <android.support.v7.widget.CardView
             android:id="@+id/timer_controls"
@@ -144,13 +166,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/colorControlsBackground"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:padding="16dp">
 
                 <ImageView
                     android:id="@+id/button_reset"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:contentDescription="@string/cd_reset"
                     android:src="@drawable/ic_replay_black_48dp" />
 
                 <ImageView
@@ -158,14 +182,15 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:src="@drawable/ic_play_arrow_black_48dp"
-                    android:tint="@color/colorAccent" />
+                    android:contentDescription="@string/cd_play_pause"
+                    android:src="@drawable/ic_play_arrow_black_48dp" />
 
                 <ImageView
                     android:id="@+id/add_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:contentDescription="@string/cd_add_stretch"
                     android:src="@drawable/ic_add_black_48dp" />
 
             </LinearLayout>

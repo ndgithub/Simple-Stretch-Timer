@@ -5,13 +5,14 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.res.Resources;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
@@ -28,9 +29,7 @@ import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -41,6 +40,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.nicky.simplestretchtimer.R;
+import com.example.nicky.simplestretchtimer.Utils;
+import com.example.nicky.simplestretchtimer.WidgetProvider;
 import com.example.nicky.simplestretchtimer.aboutactivity.AboutActivity;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 import com.example.nicky.simplestretchtimer.data.StretchDbContract;
@@ -52,68 +53,66 @@ import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>, AddStretchFragment.NoticeDialogListener {
 
-    NotificationCompat.Builder mBuilder;
-    private final int NOTIFICATION_ID = 1;
 
+    private LocalBroadcastManager mLocalBroadcastManager;
     private BroadcastReceiver mActivityTickReceiver;
     private BroadcastReceiver mNotificationTickReciever;
     private BroadcastReceiver mPosChangeReceiver;
     private BroadcastReceiver mAllStretchesCompleteReciever;
 
-
     private TimerService mTimerService;
     ServiceConnection serviceConnection;
-
+    boolean isBound;
 
     private final String TIMER_TEXT_KEY = "Timer Text";
     private final String TIMER_POS_KEY = "Timer Position";
     private final String PROGRESS_BAR_KEY = "Progress Bar Width";
     private final String CURRENT_STRETCH_REMAINING_KEY = "Current Stretch Remaining";
+    private final String TOTAL_TIME_REMAINING_KEY = "Total Time Remaining";
+    private int mTimerPos;
+    private int mCurrentStretchSecsRemaining;
 
+    private RemoteViews mRemoteView;
 
     private NotificationManager mNotificationManager;
-    boolean isBound;
-    private final String IS_BOUND = "isBound";
-
-    private int mTimerPos;
+    private final int NOTIFICATION_ID = 1;
 
     private LinearLayoutManager mLinearLayoutManager;
     private StretchAdapter mAdapter;
     private ArrayList<Stretch> mStretchArray;
-    private RemoteViews mRemoteView;
-    private int mCurrentStretchSecsRemaining;
 
     private int mScreenWidth;
 
-    private LocalBroadcastManager mLocalBroadcastManager;
-
-    @BindView(R.id.display_time)
-    TextView mDisplayText;
-    @BindView(R.id.button_play_pause)
-    ImageView mPlayPauseButton;
-    @BindView(R.id.button_reset)
-    ImageView mResetButton;
-    @BindView(R.id.recycler_view)
-    RecyclerView mRecyclerView;
-    @BindView(R.id.add_button)
-    ImageView mAddButton;
     @BindView(R.id.display_container)
     CardView mDisplayContainer;
-    @BindView(R.id.timer_controls)
-    CardView mTimerControls;
-    @BindView(R.id.stretch_count_value)
-    TextView mStretchCountValue;
-    @BindView(R.id.total_time_value)
-    TextView mTotalTime;
+    @BindView(R.id.settings)
+    ImageView mSettingsButton;
     @BindView(R.id.display)
     LinearLayout mDisplay;
+    @BindView(R.id.display_time)
+    TextView mDisplayText;
+    @BindView(R.id.stretch_count_label)
+    TextView mStretchCountLabel;
+    @BindView(R.id.stretch_count_value)
+    TextView mStretchCountValue;
+    @BindView(R.id.total_time_label)
+    TextView mTotalTimeLabel;
+    @BindView(R.id.total_time_value)
+    TextView mTotalTimeValue;
     @BindView(R.id.progress_bar)
     FrameLayout mProgressBar;
     @BindView(R.id.progress_container)
     FrameLayout mProgressContainer;
-    @BindView(R.id.settings)
-    ImageView mSettingsButton;
-
+    @BindView(R.id.recycler_view)
+    RecyclerView mRecyclerView;
+    @BindView(R.id.timer_controls)
+    CardView mTimerControls;
+    @BindView(R.id.button_play_pause)
+    ImageView mPlayPauseButton;
+    @BindView(R.id.button_reset)
+    ImageView mResetButton;
+    @BindView(R.id.add_button)
+    ImageView mAddButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,19 +120,24 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setContentView(R.layout.main_activity);
         ButterKnife.bind(this);
 
+        if (savedInstanceState != null) {
+            mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
+            mTimerPos = savedInstanceState.getInt(TIMER_POS_KEY);
+            mCurrentStretchSecsRemaining = savedInstanceState.getInt(CURRENT_STRETCH_REMAINING_KEY);
+            mTotalTimeValue.setText(savedInstanceState.getString(TOTAL_TIME_REMAINING_KEY));
+            Log.v("%%", "onCreate:" + mTotalTimeValue.getText().toString());
+
+        }
+
         mDisplayContainer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 mDisplayContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 mScreenWidth = mDisplayContainer.getWidth();
-                // mTimerControls.setMinimumHeight((int) Math.ceil(mDisplayContainer.getHeight() * Math.pow(.618,3)));
-                Log.v("***w", "width: " + mDisplayContainer.getMeasuredWidth());
             }
         });
         setupRecyclerView();
-        initializeLoader();
-
-
+        getSupportLoaderManager().initLoader(1, null, this);
 
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
 
@@ -145,12 +149,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             popup.getMenuInflater().inflate(R.menu.settings_menu, popup.getMenu());
             popup.setOnMenuItemClickListener(item -> {
                 startActivity(new Intent(this, AboutActivity.class));
-                Toast.makeText(MainActivity.this, "about clicked, go to activity", Toast.LENGTH_SHORT).show();
                 return true;
             });
             popup.show();
         });
-
 
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -158,20 +160,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onReceive(Context context, Intent intent) {
                 mTimerPos = intent.getIntExtra(TimerService.NEW_POSITION_KEY, 0);
-                mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
-
-                if (mTimerPos % 2 == 1) { //If its a "Change Position"
-                    setBreakColors();
-                } else {
+                if (mTimerPos % 2 == 0) { //If its a "Change Position"
                     setStretchColors();
+                } else {
+                    setBreakColors();
                 }
+                mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
                 updateCurrentStretchDisplay();
                 updateHighlightedStretch();
                 updateTotalTimeRemaining();
+                Log.v("!***", "onPosChangeReciever");
                 updateUiProgressBar(mCurrentStretchSecsRemaining);
 
                 if (mTimerPos == 0) { //If timer was user reset or finished
-                    mTotalTime.setText(returnSumOfStretchTime() + "");
+                    mTotalTimeValue.setText(returnSumOfStretchTime() + "");
                     mDisplayText.setText(mStretchArray.get(mTimerPos).getTime() + "");
                 }
             }
@@ -179,7 +181,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mAllStretchesCompleteReciever = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.v("***", "adfcaca");
                 mPlayPauseButton.setImageResource(R.drawable.ic_play_arrow_black_48dp);
                 updateTotalTimeRemaining();
 
@@ -188,64 +189,82 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
         mLocalBroadcastManager.registerReceiver(mPosChangeReceiver, new IntentFilter(TimerService.POSITION_CHANGED_KEY));
         mLocalBroadcastManager.registerReceiver(mAllStretchesCompleteReciever, new IntentFilter(TimerService.STRETCHES_COMPLETE_KEY));
+    }
 
-        if (savedInstanceState != null) {
-            mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
-            mTimerPos = savedInstanceState.getInt(TIMER_POS_KEY);
-            mCurrentStretchSecsRemaining = savedInstanceState.getInt(CURRENT_STRETCH_REMAINING_KEY);
-        } else {
-           // mDisplayText.setText(mStretchArray.get(mTimerPos).getTime() + "");
-        }
+    private void setStretchColors() {
+        mDisplay.setBackgroundColor(getResources().getColor(R.color.colorDisplayBackground));
+        mProgressBar.setBackgroundColor(getResources().getColor(R.color.progressBar));
+        mProgressContainer.setBackgroundColor(getResources().getColor(R.color.progressBarContainer));
+
+        int DisplayTextColor = getResources().getColor(R.color.colorDisplayText);
+        mDisplayText.setTextColor(DisplayTextColor);
+
+        mStretchCountLabel.setTextColor(DisplayTextColor);
+        mStretchCountValue.setTextColor(DisplayTextColor);
+        mTotalTimeLabel.setTextColor(DisplayTextColor);
+        mTotalTimeValue.setTextColor(DisplayTextColor);
 
     }
 
     private void setBreakColors() {
         mDisplay.setBackgroundColor(getResources().getColor(R.color.colorDisplayBackgroundBreak));
-        mDisplayText.setTextColor(getResources().getColor(R.color.colorDisplayTextBreak));
+        mProgressBar.setBackgroundColor(getResources().getColor(R.color.progressBarBreak));
+        mProgressContainer.setBackgroundColor(getResources().getColor(R.color.progressBarContainerBreak));
+
+        int DisplayTextColorBreak = getResources().getColor(R.color.colorDisplayTextBreak);
+
+        mDisplayText.setTextColor(DisplayTextColorBreak);
+        mStretchCountLabel.setTextColor(DisplayTextColorBreak);
+        mStretchCountValue.setTextColor(DisplayTextColorBreak);
+        mTotalTimeLabel.setTextColor(DisplayTextColorBreak);
+        mTotalTimeValue.setTextColor(DisplayTextColorBreak);
     }
 
-    private void setStretchColors() {
-        mDisplay.setBackgroundColor(getResources().getColor(R.color.colorDisplayBackground));
-        mDisplayText.setTextColor(getResources().getColor(R.color.colorDisplayText));
-    }
 
     private void updateCurrentStretchDisplay() {
         if (mStretchArray.isEmpty()) {
             mStretchCountValue.setText("-");
         } else {
-            mStretchCountValue.setText(((mTimerPos + 2) / 2) + "/" + (mStretchArray.size() + 1) / 2);
+            mStretchCountValue.setText(((mTimerPos + 2) / 2) + " " + getString(R.string.of) + " " + (mStretchArray.size() + 1) / 2);
         }
     }
 
     private void updateUiProgressBar(int currentStretchRemaining) {
         int width;
-        if (mTimerPos % 2 == 0) {
-            width = mScreenWidth - (mScreenWidth * currentStretchRemaining / mStretchArray.get(mTimerPos).getTime());
+        if (mStretchArray.size() == 0) {
+            width = 0;
         } else {
-            width = (mScreenWidth * currentStretchRemaining / mStretchArray.get(mTimerPos).getTime());
+            if (mTimerPos % 2 == 0) {
+                width = mScreenWidth - ((mScreenWidth * currentStretchRemaining) / mStretchArray.get(mTimerPos).getTime());
+            } else {
+                width = (mScreenWidth * currentStretchRemaining / mStretchArray.get(mTimerPos).getTime());
+            }
         }
         mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
-        Log.v("***", "progress: " + width);
 
     }
 
     private void updateHighlightedStretch() {
         int minVisPos = mLinearLayoutManager.findFirstVisibleItemPosition();
         int maxVisPos = mLinearLayoutManager.findLastVisibleItemPosition();
-        Log.v("%%", "minVisPos: " + minVisPos);
         for (int i = minVisPos; i <= maxVisPos; i += 2) { // Clear highlighting from all visisble items
-            Log.v("%%", "i: " + i);
-
-            RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(i);
-            RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
-            relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretch));
+            if (i >= 0) {
+                RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(i);
+                RelativeLayout relativeLayout = currentStretch.findViewById(R.id.list_item_container);
+                relativeLayout.setBackgroundColor(getResources().getColor(R.color.stretchItemBg));
+                ((TextView) currentStretch.findViewById(R.id.stretch_time)).setTextColor(getResources().getColor(R.color.stretchItemText));
+                ((ImageView) currentStretch.findViewById(R.id.delete_button)).setColorFilter(getResources().getColor(R.color.stretchItemDelete));
+            }
         }
 
         if (mTimerPos >= minVisPos && mTimerPos <= maxVisPos) { //Is  new stretch position on-screen
             if (mTimerPos % 2 == 0) {
                 RelativeLayout currentStretch = (RelativeLayout) mLinearLayoutManager.findViewByPosition(mTimerPos);
-                RelativeLayout relativeLayout = (RelativeLayout) currentStretch.findViewById(R.id.list_item_container);
-                relativeLayout.setBackgroundColor(getResources().getColor(R.color.colorStretchHighlight));
+                RelativeLayout relativeLayout = currentStretch.findViewById(R.id.list_item_container);
+                relativeLayout.setBackgroundColor(getResources().getColor(R.color.stretchItemBgCurrent));
+                ((TextView) currentStretch.findViewById(R.id.stretch_time)).setTextColor(getResources().getColor(R.color.stretchItemTextCurrent));
+                ((ImageView) currentStretch.findViewById(R.id.delete_button)).setColorFilter(getResources().getColor(R.color.stretchItemDeleteCurrent));
+
             }
         }
         mLinearLayoutManager.smoothScrollToPosition(mRecyclerView, null, mTimerPos);
@@ -262,11 +281,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     protected void onStart() {
-
         super.onStart();
-
         mNotificationManager.cancelAll();
-
         serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
@@ -274,8 +290,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 mTimerService = timerBinder.getService();
                 isBound = true;
                 mTimerPos = mTimerService.getTimerPos();
-                Log.v("***", "service connected");
-
                 mNotificationManager.cancelAll();
                 mTimerService.updateStretches(mStretchArray);
                 mTimerService.stopForeground(true);
@@ -284,13 +298,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     mPlayPauseButton.setImageResource(R.drawable.ic_pause_black_48dp);
                 }
 
-
             }
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
                 isBound = false;
-                Log.v("*** - MainActivity", "Service is un-bound");
             }
         };
 
@@ -303,13 +315,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 int secsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
                 mCurrentStretchSecsRemaining = secsRemaining;
                 if (mTimerPos % 2 == 1) {
-                    mDisplayText.setText("Change Position");
+                    mDisplayText.setText(R.string.change_position);
                 } else {
-                    mDisplayText.setText(formattedTime(secsRemaining));
+                    mDisplayText.setText(Utils.formatTime(secsRemaining));
                     updateTotalTimeRemaining();
-                }
-                updateUiProgressBar(mCurrentStretchSecsRemaining);
 
+                }
+                Log.v("!***", "ActivityTickReciever");
+                updateUiProgressBar(mCurrentStretchSecsRemaining);
             }
         };
 
@@ -317,11 +330,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void updateTotalTimeRemaining() {
-        if (mTimerPos % 2 == 0) {
-            Log.v("%%", "");
-            mTotalTime.setText(formattedTime(returnSumOfStretchTime() - (mStretchArray.get(mTimerPos).getTime() - mCurrentStretchSecsRemaining)));
+        if (mStretchArray.size() == 0) {
+            mTotalTimeValue.setText("-");
         } else {
-            mTotalTime.setText(formattedTime(returnSumOfStretchTime()));
+            if (mTimerPos % 2 == 0) {
+                mTotalTimeValue.setText(Utils.formatTime(returnSumOfStretchTime() - (mStretchArray.get(mTimerPos).getTime() - mCurrentStretchSecsRemaining)));
+            } else {
+                mTotalTimeValue.setText(Utils.formatTime(returnSumOfStretchTime()));
+            }
         }
     }
 
@@ -329,7 +345,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onResume() {
         super.onResume();
         mLocalBroadcastManager.unregisterReceiver(mNotificationTickReciever);
-
+        if (getIntent() != null) {
+            if (getIntent().getStringExtra(WidgetProvider.PLAY_TIMER_KEY) != null && getIntent().getStringExtra(WidgetProvider.PLAY_TIMER_KEY).equals("play")) {
+                Handler handler = new Handler();
+                handler.postDelayed(() -> playTimer(), 200);
+            }
+        }
     }
 
     @Override
@@ -347,12 +368,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-    // TODO: if foregrounded, notification should not disappear when time up.
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.v("Act. LifeCycle", "onDestroy");
         mLocalBroadcastManager.unregisterReceiver(mPosChangeReceiver);
         mLocalBroadcastManager.unregisterReceiver(mAllStretchesCompleteReciever);
     }
@@ -366,13 +384,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         outState.putInt(TIMER_POS_KEY, mTimerPos);
         outState.putInt(PROGRESS_BAR_KEY, mProgressBar.getWidth());
         outState.putInt(CURRENT_STRETCH_REMAINING_KEY, mCurrentStretchSecsRemaining);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        outState.putString(TOTAL_TIME_REMAINING_KEY,mTotalTimeValue.getText().toString());
+        Log.v("%%", "onSave:" + mTotalTimeValue.getText().toString());
     }
 
     @Override
@@ -396,7 +409,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
-
     private void onPlayPauseClick() {
         if (!mTimerService.isTicking()) {
             playTimer();
@@ -409,8 +421,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (mStretchArray.isEmpty()) {
             notifyUserOfNoStretches();
         } else {
-            mPlayPauseButton.setImageResource(R.drawable.ic_pause_black_48dp);
-            mTimerService.play();
+            if (!mTimerService.isTicking()) {
+                mPlayPauseButton.setImageResource(R.drawable.ic_pause_black_48dp);
+                mTimerService.play();
+            }
         }
 
     }
@@ -442,40 +456,54 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onLayoutChildren(final RecyclerView.Recycler recycler, final RecyclerView.State state) {
                 super.onLayoutChildren(recycler, state);
                 if (!mStretchArray.isEmpty()) {
-                    //updateHighlightedStretch(); // TODO: why doesnt' work in landscape?
+                    mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
+                    updateHighlightedStretch();
                     updateUiProgressBar(mCurrentStretchSecsRemaining);
+                    //updateTotalTimeRemaining();
+
+                    updateCurrentStretchDisplay();
+
+
                 }
             }
         };
-
 
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
         mStretchArray = new ArrayList<>();
         mAdapter = new StretchAdapter(mStretchArray, mTimerPos, this, mRecyclerView);
         mRecyclerView.setAdapter(mAdapter);
-        mRecyclerView.setItemViewCacheSize(0); // TODO: is this needed? Test on device
+        mRecyclerView.setItemViewCacheSize(0);
     }
 
     public void addStretch(String name, int time) {
-        // TODO: scroll to bottom of recycler view
         ContentValues cv = new ContentValues();
         cv.put(StretchDbContract.Stretches.NAME, name);
         cv.put(StretchDbContract.Stretches.TIME, time);
         getContentResolver().insert(StretchDbContract.Stretches.CONTENT_URI, cv);
     }
 
+    public void editStretch(String name, int time, int id) {
+        ContentValues cv = new ContentValues();
+        cv.put(StretchDbContract.Stretches.NAME, name);
+        cv.put(StretchDbContract.Stretches.TIME, time);
+        Uri uri = ContentUris.withAppendedId(StretchDbContract.Stretches.CONTENT_URI, id);
+        getContentResolver().update(uri, cv, null, null);
+
+    }
+
     public void onDeleteStretch(int deletedPosition) {
-        if (deletedPosition == mTimerPos) {
-            if (mTimerService.isTicking()) {
+        boolean wasTicking = mTimerService.isTicking();
+        if (deletedPosition == mTimerPos) { //If current stretch was deleted
+            if (wasTicking) {
                 mTimerService.stopTicking();
             }
-
             if (mTimerPos < mStretchArray.size() - 1) { //If its not the last stretch
                 Handler handler = new Handler();
-                handler.postDelayed(() -> mTimerService.play(), 200);
-                //newCurrentStretch(mTimerPos);
+                if (wasTicking) {
+                    handler.postDelayed(() -> mTimerService.play(), 200);
+                }
             } else if (mTimerPos == mStretchArray.size() - 1) { // If it IS the last stretch
-                mTimerService.timerFinished(1);
+                mTimerService.timerFinished();
                 mTimerPos--;
             }
         } else if (deletedPosition < mTimerPos) {
@@ -509,7 +537,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onReceive(Context context, Intent intent) {
                 if (mTimerService.isForeground()) {
                     int secsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                    mRemoteView.setTextViewText(R.id.remote_text, formattedTime(secsRemaining));
+                    mRemoteView.setTextViewText(R.id.remote_text, Utils.formatTime(secsRemaining));
                     mNotificationManager.notify(1, notification);
                 }
             }
@@ -518,30 +546,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 registerReceiver(mNotificationTickReciever, new IntentFilter(TimerService.ONTICK_KEY));
     }
 
-    private String formattedTime(int secsRemaining) {
-        if (secsRemaining < 60) {
-            return secsRemaining + "";
-        } else if (secsRemaining % 60 >= 10) {
-            return secsRemaining / 60 + ":" + secsRemaining % 60;
-        } else {
-            return secsRemaining / 60 + ":0" + secsRemaining % 60;
-        }
-    }
-
 
     //----------------------- CursorLoader Stuff -----------------------//
 
-    public void initializeLoader() {
-        getSupportLoaderManager().initLoader(1, null, this);
-
-    }
-
     @Override
     public Loader onCreateLoader(int id, Bundle args) {
-        Log.v("**Loader", "onCreateLoader");
         String[] projection = {StretchDbContract.Stretches._ID, StretchDbContract.Stretches.NAME, StretchDbContract.Stretches.TIME};
         CursorLoader cursorLoader = new CursorLoader(this, StretchDbContract.Stretches.CONTENT_URI, projection, null, null, null);
-
         return cursorLoader;
     }
 
@@ -558,7 +569,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             } while (cursor.moveToNext());
         }
 
-
         for (int i = 1; i < mStretchArray.size(); i += 2) { //Adds rest breaks (change stretch position) in between stretches
             mStretchArray.add(i, new Stretch("BREAK", 5, 1, null));
         }
@@ -567,12 +577,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (mTimerService != null) {
             mTimerService.updateStretches(mStretchArray);
         }
-        updateCurrentStretchDisplay();
+        mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
         updateTotalTimeRemaining();
 
+
     }
-
-
 
 
     @Override
@@ -580,17 +589,24 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mAdapter.notifyDataSetChanged();
     }
 
-    //----------------------- Dialoge Fragment Interface methods -----------------------//
+
+    //----------------------- Dialogue Fragment Interface methods -----------------------//
     public void showAddStretchDialog() {
-        // Create an instance of the dialog fragment and show it
-        AddStretchFragment dialog = AddStretchFragment.newInstance(10, null, "Add New Stretch");
-        //DialogFragment dialog = new AddStretchFragment();
+        AddStretchFragment dialog = AddStretchFragment.newInstance(10, null, null, AddStretchFragment.TYPE_ADD);
         dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
     }
 
     @Override
-    public void onDialogPositiveClick(DialogFragment dialog, int minValue, int secValue, String stretchName) {
-        addStretch(stretchName, secValue + (minValue * 60));
+    public void onDialogPositiveClick(DialogFragment dialog, int minValue, int secValue, String stretchName, Integer id, int type) {
+        switch (type) {
+            case AddStretchFragment.TYPE_ADD:
+                addStretch(stretchName, secValue + (minValue * 60));
+                break;
+            case AddStretchFragment.TYPE_EDIT:
+                editStretch(stretchName, secValue + (minValue * 60), id);
+                break;
+        }
+
     }
 
     @Override
@@ -598,40 +614,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
-
 }
 
-//----------------------- Eventually Stuff -----------------------//
 
 
-// Widget UI
-// Progress Bar get fatter
-// Remove Log Statements
-// Strings to resources
-// Add content Descriptions
-
-//----------------------- Optional -----------------------//
-// Skip to next stretch button - ?
-// Programming to interfaces?
-// Notifications when foregrounded
-// NEXT STRETCH
-//Gray reset button when already reset, or no stretches.
-// Maintain scroll position on orientation change.
-//Increments time picker by 5's
-//Make launcher icon
-// Make progress bar get skinner
-// App builds and deploys using the installRelease Gradle task.
-//UI for stretch title
-// UI for list items
-
-
-//----------------------- Material Stuff -----------------------//
-
-// A touch target should be at least 48 X 48
-
-//----------------------- Keep in Mind Stuff -----------------------//
-
-// the services onCreate gets called when service is first started(gets called
-// before onStartCommand). If service is already running, it does not get called.
-
-//onLoadFinished of cursor adapter gets called everytime data changes.

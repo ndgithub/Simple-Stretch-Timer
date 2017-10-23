@@ -21,12 +21,6 @@ public class SimpleStretchTimer extends Application {
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());
             Stetho.initializeWithDefaults(this);
-//            if (LeakCanary.isInAnalyzerProcess(this)) {
-//                 //This process is dedicated to LeakCanary for heap analysis.
-//                 //You should not init your app in this process.
-//                return;
-//            }
-//            LeakCanary.install(this);
         }
         MobileAds.initialize(this, "ca-app-pub-9905467979125118~3385635611");
 
