@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mTimerPos = savedInstanceState.getInt(TIMER_POS_KEY);
             mCurrentStretchSecsRemaining = savedInstanceState.getInt(CURRENT_STRETCH_REMAINING_KEY);
             mTotalTimeValue.setText(savedInstanceState.getString(TOTAL_TIME_REMAINING_KEY));
-            Log.v("%%", "onCreate:" + savedInstanceState.getString(TOTAL_TIME_REMAINING_KEY));
         }
 
         mDisplayContainer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -168,7 +167,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 updateUiCurrentStretchDisplay();
                 updateUiHighlightedStretch();
                 updateTotalTimeRemaining();
-                Log.v("!***", "onPosChangeReciever");
                 updateUiProgressBar();
             }
         };
@@ -191,8 +189,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onLayoutChildren(final RecyclerView.Recycler recycler, final RecyclerView.State state) {
                 super.onLayoutChildren(recycler, state);
                 if (!mStretchArray.isEmpty()) {
-                    //updateTotalTimeRemaining();
-                    //mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
                     updateUiHighlightedStretch();
                     updateUiProgressBar();
                     updateUiCurrentStretchDisplay();
@@ -317,7 +313,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         outState.putInt(PROGRESS_BAR_KEY, mProgressBar.getWidth());
         outState.putInt(CURRENT_STRETCH_REMAINING_KEY, mCurrentStretchSecsRemaining);
         outState.putString(TOTAL_TIME_REMAINING_KEY, mTotalTimeValue.getText().toString());
-        Log.v("%%", "onSave:" + mTotalTimeValue.getText().toString());
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
