@@ -1,5 +1,6 @@
 package com.example.nicky.simplestretchtimer.TimerActivity;
 
+import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -15,12 +16,17 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.transition.ChangeBounds;
+import android.support.transition.Fade;
+import android.support.transition.Transition;
+import android.support.transition.TransitionManager;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewGroupCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
@@ -30,7 +36,9 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -246,6 +254,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mActivityTickReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+
                 int secsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
                 mCurrentStretchSecsRemaining = secsRemaining;
                 if (mTimerPos % 2 == 1) {
@@ -314,6 +323,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         outState.putInt(CURRENT_STRETCH_REMAINING_KEY, mCurrentStretchSecsRemaining);
         outState.putString(TOTAL_TIME_REMAINING_KEY, mTotalTimeValue.getText().toString());
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -405,14 +415,29 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             width = 0;
         } else {
             if (mTimerPos % 2 == 0) {
-                width = mScreenWidth - ((mScreenWidth * mCurrentStretchSecsRemaining) / mStretchArray.get(mTimerPos).getTime());
+                width = mScreenWidth - ((mScreenWidth * (mCurrentStretchSecsRemaining - 1)) / mStretchArray.get(mTimerPos).getTime());
             } else {
-                width = (mScreenWidth * mCurrentStretchSecsRemaining / mStretchArray.get(mTimerPos).getTime());
+                width = (mScreenWidth * (mCurrentStretchSecsRemaining - 1) / mStretchArray.get(mTimerPos).getTime());
             }
         }
-        mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
+        ValueAnimator anim = ValueAnimator.ofInt(mProgressBar.getMeasuredWidth(), width);
+        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                int val = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = mProgressBar.getLayoutParams();
+                layoutParams.width = val;
+                mProgressBar.setLayoutParams(layoutParams);
+            }
+        });
+        anim.setDuration(1000);
+        anim.setInterpolator(new LinearInterpolator());
+        anim.start();
+
+        //mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
 
     }
+
     private void onPlayPauseClick() {
         if (!mTimerService.isTicking()) {
             playTimer();
@@ -532,6 +557,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         CursorLoader cursorLoader = new CursorLoader(this, StretchDbContract.Stretches.CONTENT_URI, projection, null, null, null);
         return cursorLoader;
     }
+
     @Override
     public void onLoadFinished(Loader loader, Cursor cursor) {
         mStretchArray.clear();

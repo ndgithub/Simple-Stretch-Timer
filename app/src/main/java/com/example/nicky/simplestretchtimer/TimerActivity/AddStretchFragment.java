@@ -76,8 +76,9 @@ public class AddStretchFragment extends DialogFragment {
         secPicker.setMaxValue(55);
         secPicker.setValue(30);
 
-
-        secPicker.setValue(getArguments().getInt("time"));
+        int totalSecs = getArguments().getInt("time");
+        minPicker.setValue(totalSecs/60);
+        secPicker.setValue(totalSecs % 60);
         stretchName.setText(getArguments().getString("name"));
 
         mTitle = (getArguments().getInt("type") == TYPE_ADD) ? getString(R.string.add_stretch) : getString(R.string.edit_stretch);

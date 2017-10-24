@@ -101,8 +101,8 @@
                         android:layout_height="0dp"
                         android:layout_weight="1"
                         android:gravity="center"
-                        android:paddingLeft="46dp"
-                        android:paddingRight="46dp"
+                        android:paddingLeft="40dp"
+                        android:paddingRight="40dp"
                         android:text="@string/total_remaining"
                         android:textColor="@color/colorDisplayText"
                         app:autoSizeTextType="uniform" />
