@@ -38,6 +38,7 @@
         android:tint="@color/deleteButton"
         android:src="@drawable/ic_close_black_36dp"
         android:contentDescription="@string/cd_delete_stretch"
+        android:focusable="true"
          />
 
 </RelativeLayout>

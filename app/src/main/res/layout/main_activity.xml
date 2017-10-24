@@ -33,7 +33,8 @@
                     android:layout_alignParentEnd="true"
                     android:contentDescription="@string/cd_settings"
                     android:src="@drawable/ic_more_vert_black_48dp"
-                    android:tint="@color/settings" />
+                    android:tint="@color/settings"
+                    android:focusable="true"/>
 
                 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
                     android:id="@+id/display_time"
@@ -175,7 +176,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:contentDescription="@string/cd_reset"
-                    android:src="@drawable/ic_replay_black_48dp" />
+                    android:src="@drawable/ic_replay_black_48dp"
+                    android:focusable="true"/>
 
                 <ImageView
                     android:id="@+id/button_play_pause"
@@ -183,7 +185,9 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:contentDescription="@string/cd_play_pause"
-                    android:src="@drawable/ic_play_arrow_black_48dp" />
+                    android:src="@drawable/ic_play_arrow_black_48dp"
+                    android:tint="@color/colorAccent"
+                    android:focusable="true"/>
 
                 <ImageView
                     android:id="@+id/add_button"
@@ -191,7 +195,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:contentDescription="@string/cd_add_stretch"
-                    android:src="@drawable/ic_add_black_48dp" />
+                    android:src="@drawable/ic_add_black_48dp"
+                    android:focusable="true"/>
 
             </LinearLayout>
         </android.support.v7.widget.CardView>
