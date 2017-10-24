@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer.TimerActivity;
+package com.example.nicky.simplestretchtimer.timeractivity;
 
 import android.os.Handler;
 import android.os.Message;

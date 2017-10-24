@@ -17,9 +17,10 @@
         <provider
             android:name=".data.StretchProvider"
             android:authorities="com.example.nicky.simplestretchtimer.stretches" />
-        <service android:name=".TimerActivity.TimerService" />
-
-        <activity android:name=".TimerActivity.MainActivity">
+        <service android:name=".timeractivity.TimerService" />
+        <service android:name=".widget.StretchWidgetService"
+        android:permission="android.permission.BIND_REMOTEVIEWS" />
+        <activity android:name=".timeractivity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -27,17 +28,20 @@
         </activity>
         <activity
             android:name=".aboutactivity.AboutActivity"
-            android:parentActivityName=".TimerActivity.MainActivity"
+            android:parentActivityName=".timeractivity.MainActivity"
             android:theme="@style/AboutTheme" />
 
-        <receiver android:name="WidgetProvider">
+        <receiver android:name=".widget.WidgetProvider">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.udacity.stockhawk.ACTION_DATA_UPDATED" />
+
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget" />
         </receiver>
+
     </application>
 
 </manifest>

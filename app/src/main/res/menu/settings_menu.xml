@@ -3,7 +3,6 @@
 
     <item
         android:id="@+id/about"
-        android:title="About" />
-
+        android:title="@string/About" />
 
 </menu>

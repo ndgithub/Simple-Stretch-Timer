@@ -11,7 +11,7 @@
         android:layout_marginLeft="4dp"
         android:layout_marginRight="4dp"
         android:layout_marginTop="16dp"
-        android:hint="Stretch Name"
+        android:hint="@string/edit_text_hint"
         android:inputType="textEmailAddress"
         android:focusable="true"/>
 
@@ -28,7 +28,7 @@
             android:orientation="horizontal"
             android:layout_gravity="center_horizontal">
 
-            <com.example.nicky.simplestretchtimer.TimerActivity.BigNumberPicker
+            <com.example.nicky.simplestretchtimer.timeractivity.BigNumberPicker
                 android:id="@+id/min_picker"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -40,8 +40,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="min"
-                android:textSize="20dp"
+                android:text="@string/minutes_abbreviation"
+                android:textSize="20sp"
                 android:layout_gravity="center_vertical"
 
                 />
@@ -53,7 +53,7 @@
             android:layout_weight="1"
             android:orientation="horizontal">
 
-            <com.example.nicky.simplestretchtimer.TimerActivity.BigNumberPicker
+            <com.example.nicky.simplestretchtimer.timeractivity.BigNumberPicker
                 android:id="@+id/sec_picker"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -64,8 +64,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="sec"
-                android:textSize="20dp"
+                android:text="@string/seconds_abbreviation"
+                android:textSize="20sp"
                 android:layout_gravity="center_vertical"
                 />
         </LinearLayout>

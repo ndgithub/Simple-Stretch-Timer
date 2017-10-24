@@ -45,7 +45,7 @@
                     android:maxLines="1"
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp"
-                    android:text="-"
+                    android:text="@string/current_stretch_time"
                     android:textStyle="bold"
                     android:textColor="@color/colorDisplayText"
                     app:autoSizeTextType="uniform" />
@@ -71,8 +71,8 @@
                         android:layout_height="0dp"
                         android:layout_weight="1"
                         android:gravity="center"
-                        android:paddingLeft="48dp"
-                        android:paddingRight="48dp"
+                        android:paddingLeft="40dp"
+                        android:paddingRight="40dp"
                         android:text="@string/current_stretch"
                         android:textColor="@color/colorDisplayText"
                         app:autoSizeTextType="uniform" />
@@ -101,8 +101,8 @@
                         android:layout_height="0dp"
                         android:layout_weight="1"
                         android:gravity="center"
-                        android:paddingLeft="40dp"
-                        android:paddingRight="40dp"
+                        android:paddingLeft="38dp"
+                        android:paddingRight="38dp"
                         android:text="@string/total_remaining"
                         android:textColor="@color/colorDisplayText"
                         app:autoSizeTextType="uniform" />

@@ -16,6 +16,5 @@
         android:id="@+id/remote_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="remote view text view"
         android:textColor="#000000" />
 </LinearLayout>

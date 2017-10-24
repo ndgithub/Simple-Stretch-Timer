@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer.TimerActivity;
+package com.example.nicky.simplestretchtimer.timeractivity;
 
 import android.app.Service;
 import android.content.Intent;

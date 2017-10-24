@@ -12,6 +12,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.widget.Toast;
 
+import com.example.nicky.simplestretchtimer.R;
+
 import timber.log.Timber;
 
 /**
@@ -81,7 +83,7 @@ public class StretchProvider extends ContentProvider {
             case STRETCHES:
                 if (id == -1) {
                     Timber.v("Failed to insert row for " + uri);
-                    Toast.makeText(getContext(), "Woops! Couldn't add stretch", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), R.string.could_not_add, Toast.LENGTH_SHORT).show();
                     return null;
                 }
                 getContext().getContentResolver().notifyChange(uri, null);

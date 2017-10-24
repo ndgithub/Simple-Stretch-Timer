@@ -1,24 +1,18 @@
-package com.example.nicky.simplestretchtimer.TimerActivity;
+package com.example.nicky.simplestretchtimer.timeractivity;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 
 import com.example.nicky.simplestretchtimer.R;
-
-import butterknife.BindView;
-import butterknife.BindViews;
-import butterknife.ButterKnife;
 
 /**
  * Created by Nicky on 9/4/17.

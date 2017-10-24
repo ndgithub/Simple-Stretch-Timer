@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer.TimerActivity;
+package com.example.nicky.simplestretchtimer.timeractivity;
 
 import android.content.ContentUris;
 import android.content.Context;
@@ -11,7 +11,6 @@ import android.widget.ImageView;
 
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.Utils;

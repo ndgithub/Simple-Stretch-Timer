@@ -1,11 +1,10 @@
-package com.example.nicky.simplestretchtimer.TimerActivity;
+package com.example.nicky.simplestretchtimer.timeractivity;
 
 import android.content.Context;
 import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.NumberPicker;
 
 public class BigNumberPicker extends android.widget.NumberPicker {
 

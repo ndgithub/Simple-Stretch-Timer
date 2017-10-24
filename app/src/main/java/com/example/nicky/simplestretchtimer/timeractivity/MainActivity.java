@@ -1,4 +1,4 @@
-package com.example.nicky.simplestretchtimer.TimerActivity;
+package com.example.nicky.simplestretchtimer.timeractivity;
 
 import android.animation.ValueAnimator;
 import android.app.Notification;
@@ -16,26 +16,18 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.transition.ChangeBounds;
-import android.support.transition.Fade;
-import android.support.transition.Transition;
-import android.support.transition.TransitionManager;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.view.ViewGroupCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.animation.LinearInterpolator;
@@ -49,10 +41,11 @@ import android.widget.Toast;
 
 import com.example.nicky.simplestretchtimer.R;
 import com.example.nicky.simplestretchtimer.Utils;
-import com.example.nicky.simplestretchtimer.WidgetProvider;
+import com.example.nicky.simplestretchtimer.widget.WidgetProvider;
 import com.example.nicky.simplestretchtimer.aboutactivity.AboutActivity;
 import com.example.nicky.simplestretchtimer.data.Stretch;
 import com.example.nicky.simplestretchtimer.data.StretchDbContract;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import java.util.ArrayList;
 
@@ -122,11 +115,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @BindView(R.id.add_button)
     ImageView mAddButton;
 
+    private FirebaseAnalytics mFirebaseAnalytics;
+    private String FB_BUTTON_CLICKED = "button_clicked";
+    private String FB_BUTTON_TYPE_KEY = "button_type";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
         ButterKnife.bind(this);
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         if (savedInstanceState != null) {
             mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
@@ -147,9 +145,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mRemoteView = new RemoteViews(getPackageName(), R.layout.notification);
 
-        mPlayPauseButton.setOnClickListener(v -> onPlayPauseClick());
-        mAddButton.setOnClickListener(v -> showAddStretchDialog());// addStretch("New Stretch: ", 5));
-        mResetButton.setOnClickListener(v -> reset());
+        mPlayPauseButton.setOnClickListener(v -> {
+            onPlayPauseClick();
+            fbButtonClicked("Play/Pause");
+        });
+        mAddButton.setOnClickListener(v -> {
+            showAddStretchDialog();
+            fbButtonClicked("Add");
+        });
+        mResetButton.setOnClickListener(v -> {
+            reset();
+            fbButtonClicked("Reset");
+        });
         mSettingsButton.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, mSettingsButton);
             popup.getMenuInflater().inflate(R.menu.settings_menu, popup.getMenu());
@@ -322,27 +329,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         outState.putInt(PROGRESS_BAR_KEY, mProgressBar.getWidth());
         outState.putInt(CURRENT_STRETCH_REMAINING_KEY, mCurrentStretchSecsRemaining);
         outState.putString(TOTAL_TIME_REMAINING_KEY, mTotalTimeValue.getText().toString());
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        if (id == R.id.add_entry) {
-            addStretch("asdf", 5);
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-
     }
 
     private void setStretchColors() {
@@ -546,7 +532,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void notifyUserOfNoStretches() {
-        Toast.makeText(this, "Add A Stretch First", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.add_a_stretch_first, Toast.LENGTH_SHORT).show();
     }
 
     //----------------------- CursorLoader Stuff -----------------------//
@@ -583,6 +569,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
         }
         updateTotalTimeRemaining();
+    }
+
+    private void fbButtonClicked (String buttonType) {
+        Bundle bundle = new Bundle();
+        bundle.putString(FB_BUTTON_TYPE_KEY,buttonType);
+        mFirebaseAnalytics.logEvent(FB_BUTTON_CLICKED,bundle);
     }
 
     @Override
