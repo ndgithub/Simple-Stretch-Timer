@@ -418,19 +418,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 width = (mScreenWidth * (mCurrentTenthsRemaining) / (mStretchArray.get(mTimerPos).getTime() * 10));
             }
         }
-//        ValueAnimator anim = ValueAnimator.ofInt(mProgressBar.getMeasuredWidth(), width);
-//        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-//            @Override
-//            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-//                int val = (Integer) valueAnimator.getAnimatedValue();
-//                ViewGroup.LayoutParams layoutParams = mProgressBar.getLayoutParams();
-//                layoutParams.width = val;
-//                mProgressBar.setLayoutParams(layoutParams);
-//            }
-//        });
-//        anim.setDuration(1000);
-//        anim.setInterpolator(new LinearInterpolator());
-//        anim.start();
 
         mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
 
@@ -638,6 +625,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 }
 
-// Focusable
+
 
 
