@@ -28,6 +28,8 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.animation.LinearInterpolator;
@@ -68,10 +70,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private final String TIMER_TEXT_KEY = "Timer Text";
     private final String TIMER_POS_KEY = "Timer Position";
     private final String PROGRESS_BAR_KEY = "Progress Bar Width";
-    private final String CURRENT_STRETCH_REMAINING_KEY = "Current Stretch Remaining";
+    private final String CURRENT_STRETCH_REMAINING_KEY = "Current Stretch Remaining Key";
+    private final String CURRENT_STRETCH_TENTHS_KEY = "Current Stretch Tenths Key";
     private final String TOTAL_TIME_REMAINING_KEY = "Total Time Remaining";
     private int mTimerPos;
     private Integer mCurrentStretchSecsRemaining;
+    private Integer mCurrentTenthsRemaining;
 
     private RemoteViews mRemoteView;
 
@@ -130,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mDisplayText.setText(savedInstanceState.getString(TIMER_TEXT_KEY));
             mTimerPos = savedInstanceState.getInt(TIMER_POS_KEY);
             mCurrentStretchSecsRemaining = savedInstanceState.getInt(CURRENT_STRETCH_REMAINING_KEY);
+            mCurrentTenthsRemaining = savedInstanceState.getInt(CURRENT_STRETCH_TENTHS_KEY);
             mTotalTimeValue.setText(savedInstanceState.getString(TOTAL_TIME_REMAINING_KEY));
         }
 
@@ -262,13 +267,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onReceive(Context context, Intent intent) {
 
-                int secsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                mCurrentStretchSecsRemaining = secsRemaining;
+                mCurrentTenthsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
                 if (mTimerPos % 2 == 1) {
                     mDisplayText.setText(R.string.change_position);
                 } else {
-                    mDisplayText.setText(Utils.formatTime(secsRemaining));
-                    updateTotalTimeRemaining();
+                    if (mCurrentTenthsRemaining % 10 == 0) {
+                        mCurrentStretchSecsRemaining = mCurrentTenthsRemaining / 10;
+                        mDisplayText.setText(Utils.formatTime(mCurrentStretchSecsRemaining));
+                        Log.v("***", "tenthsRemaining: " + mCurrentTenthsRemaining);
+                        Log.v("***", "secsRemaining: " + mCurrentStretchSecsRemaining);
+
+                        updateTotalTimeRemaining();
+                    }
                 }
                 updateUiProgressBar();
             }
@@ -329,6 +339,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         outState.putInt(PROGRESS_BAR_KEY, mProgressBar.getWidth());
         outState.putInt(CURRENT_STRETCH_REMAINING_KEY, mCurrentStretchSecsRemaining);
         outState.putString(TOTAL_TIME_REMAINING_KEY, mTotalTimeValue.getText().toString());
+        outState.putInt(CURRENT_STRETCH_TENTHS_KEY, mCurrentTenthsRemaining);
+
     }
 
     private void setStretchColors() {
@@ -401,26 +413,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             width = 0;
         } else {
             if (mTimerPos % 2 == 0) {
-                width = mScreenWidth - ((mScreenWidth * (mCurrentStretchSecsRemaining - 1)) / mStretchArray.get(mTimerPos).getTime());
+                width = mScreenWidth - ((mScreenWidth * (mCurrentTenthsRemaining)) / (mStretchArray.get(mTimerPos).getTime() * 10));
             } else {
-                width = (mScreenWidth * (mCurrentStretchSecsRemaining - 1) / mStretchArray.get(mTimerPos).getTime());
+                width = (mScreenWidth * (mCurrentTenthsRemaining) / (mStretchArray.get(mTimerPos).getTime() * 10));
             }
         }
-        ValueAnimator anim = ValueAnimator.ofInt(mProgressBar.getMeasuredWidth(), width);
-        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                int val = (Integer) valueAnimator.getAnimatedValue();
-                ViewGroup.LayoutParams layoutParams = mProgressBar.getLayoutParams();
-                layoutParams.width = val;
-                mProgressBar.setLayoutParams(layoutParams);
-            }
-        });
-        anim.setDuration(1000);
-        anim.setInterpolator(new LinearInterpolator());
-        anim.start();
+//        ValueAnimator anim = ValueAnimator.ofInt(mProgressBar.getMeasuredWidth(), width);
+//        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+//            @Override
+//            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+//                int val = (Integer) valueAnimator.getAnimatedValue();
+//                ViewGroup.LayoutParams layoutParams = mProgressBar.getLayoutParams();
+//                layoutParams.width = val;
+//                mProgressBar.setLayoutParams(layoutParams);
+//            }
+//        });
+//        anim.setDuration(1000);
+//        anim.setInterpolator(new LinearInterpolator());
+//        anim.start();
 
-        //mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
+        mProgressBar.setLayoutParams(new FrameLayout.LayoutParams(width, 16, Gravity.CENTER));
 
     }
 
@@ -521,9 +533,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (mTimerService.isForeground()) {
-                    int secsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
-                    mRemoteView.setTextViewText(R.id.remote_text, Utils.formatTime(secsRemaining));
-                    mNotificationManager.notify(1, notification);
+                    mCurrentTenthsRemaining = (int) intent.getDoubleExtra(TimerService.MILS_UNTIL_FINISHED_KEY, 1);
+                    if (mTimerPos % 2 == 1) {
+                        mRemoteView.setTextViewText(R.id.remote_text, getResources().getString(R.string.change_position));
+                        mNotificationManager.notify(1, notification);
+                    } else {
+                        if (mCurrentTenthsRemaining % 10 == 0) {
+                            mCurrentStretchSecsRemaining = mCurrentTenthsRemaining / 10;
+                            mRemoteView.setTextViewText(R.id.remote_text, Utils.formatTime(mCurrentStretchSecsRemaining));
+                            mNotificationManager.notify(1, notification);
+                        }
+                    }
+
+
+
                 }
             }
         };
@@ -568,13 +591,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (mCurrentStretchSecsRemaining == null) {
             mCurrentStretchSecsRemaining = mStretchArray.get(mTimerPos).getTime();
         }
+        if (mCurrentTenthsRemaining == null) {
+            mCurrentTenthsRemaining = mStretchArray.get(mTimerPos).getTime() * 10;
+
+        }
+
+
         updateTotalTimeRemaining();
     }
 
-    private void fbButtonClicked (String buttonType) {
+    private void fbButtonClicked(String buttonType) {
         Bundle bundle = new Bundle();
-        bundle.putString(FB_BUTTON_TYPE_KEY,buttonType);
-        mFirebaseAnalytics.logEvent(FB_BUTTON_CLICKED,bundle);
+        bundle.putString(FB_BUTTON_TYPE_KEY, buttonType);
+        mFirebaseAnalytics.logEvent(FB_BUTTON_CLICKED, bundle);
     }
 
     @Override

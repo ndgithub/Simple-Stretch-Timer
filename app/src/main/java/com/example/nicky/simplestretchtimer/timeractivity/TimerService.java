@@ -43,7 +43,7 @@ public class TimerService extends Service {
     public long mStartingTime;
 
     MyCountdownTimer countDownTimer;
-    private final int TICK_INTERVAL = 1000;
+    private final int TICK_INTERVAL = 100;
 
     public boolean isTicking() {
         return mTicking;
@@ -190,7 +190,7 @@ public class TimerService extends Service {
 
     private void broadcastTick(long milsUntilFinished) {
         Intent tickIntent = new Intent(ONTICK_KEY);
-        tickIntent.putExtra(MILS_UNTIL_FINISHED_KEY, Math.ceil(milsUntilFinished / 1000.));
+        tickIntent.putExtra(MILS_UNTIL_FINISHED_KEY, Math.ceil(milsUntilFinished / 100.));
         localBroadcaster.sendBroadcast(tickIntent);
 
     }
