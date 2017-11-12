@@ -4,7 +4,7 @@ Android application thats allows users to create a series of interval timers for
 * App provides an audible tone at the end of each interval so it can run in the background. 
 
 
-# Screenshots
+## Screenshots
 <img src="https://raw.githubusercontent.com/ndgithub/simple-stretch-timer/master/screenshots/Screenshot_1510374645.png" alt="alt text" width="300"> 
 <img src="https://raw.githubusercontent.com/ndgithub/simple-stretch-timer/master/screenshots/Screenshot_1510377459.png" alt="alt text" width="600">
 
